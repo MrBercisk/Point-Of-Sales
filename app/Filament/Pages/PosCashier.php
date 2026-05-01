@@ -65,13 +65,11 @@ class PosCashier extends Page implements HasForms
             ->get();
     }
 
-    #[Computed]
     public function cartTotal(): float
     {
         return $this->cart->sum(fn ($item) => $item['price'] * $item['quantity']);
     }
 
-    #[Computed]
     public function cartItemsCount(): int
     {
         return $this->cart->sum('quantity');

@@ -28,6 +28,7 @@ class ProductsTable
         return $table
             ->columns([
                 ImageColumn::make('image')
+                    ->disk('public')
                     ->square()
                     ->size(50),
 
