@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Services\ReceiptService;
+use App\Services\WhatsAppService;
 use Filament\Support\Facades\FilamentView;
 use Filament\View\PanelsRenderHook;
 use Illuminate\Support\Facades\Blade;
@@ -14,7 +16,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(ReceiptService::class);
+        $this->app->singleton(WhatsAppService::class);
     }
 
     /**
