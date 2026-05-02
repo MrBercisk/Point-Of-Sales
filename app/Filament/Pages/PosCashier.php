@@ -16,6 +16,7 @@ use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
 use BackedEnum;
 use Filament\Support\Icons\Heroicon;
+use UnitEnum;
 
 class PosCashier extends Page implements HasForms
 {
@@ -24,7 +25,8 @@ class PosCashier extends Page implements HasForms
     protected static string|BackedEnum|null $navigationIcon = Heroicon::ComputerDesktop;
     protected static ?string $navigationLabel = 'POS Cashier';
     protected static ?string $title = 'Point of Sale';
-    protected static ?int $navigationSort = 0;
+     protected static string|UnitEnum|null $navigationGroup = 'Sales';
+    protected static ?int $navigationSort = 2; 
     protected string $view = 'filament.pages.pos-cashier';
 
     // Properties
