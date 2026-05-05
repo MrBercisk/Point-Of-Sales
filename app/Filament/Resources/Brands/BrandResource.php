@@ -53,4 +53,9 @@ class BrandResource extends Resource
             'edit' => EditBrand::route('/{record}/edit'),
         ];
     }
+    // buat hidden menu
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
 }

@@ -28,11 +28,13 @@ class ProductsTable
         return $table
             ->columns([
                 ImageColumn::make('image')
+                    ->label(__('app.image'))
                     ->disk('public')
                     ->square()
                     ->size(50),
 
                 TextColumn::make('name')
+                    ->label(__('app.name'))
                     ->searchable()
                     ->sortable()
                     ->weight('bold')
@@ -41,14 +43,17 @@ class ProductsTable
                     ),
 
                 TextColumn::make('category.name')
+                    ->label(__('app.category'))
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('price')
+                    ->label(__('app.price'))
                     ->money('IDR')
                     ->sortable(),
 
                 TextColumn::make('stock')
+                    ->label(__('app.stock'))
                     ->sortable()
                     ->badge()
                     ->color(fn (int $state): string => match(true) {
@@ -63,7 +68,7 @@ class ProductsTable
                     }),
 
                 IconColumn::make('is_active')
-                    ->label('Active')
+                    ->label(__('app.active'))
                     ->boolean()
                     ->trueIcon('heroicon-o-check-circle')
                     ->falseIcon('heroicon-o-x-circle')
@@ -71,7 +76,7 @@ class ProductsTable
                     ->falseColor('danger'),
 
                 TextColumn::make('updated_at')
-                    ->label('Last Updated')
+                    ->label(__('app.updated_at'))
                     ->dateTime('d M Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -84,19 +89,19 @@ class ProductsTable
                     ->native(false),
 
                 TernaryFilter::make('is_active')
-                    ->label('Status')
+                    ->label(__('app.active'))
                     ->boolean()
-                    ->trueLabel('Active')
-                    ->falseLabel('Inactive')
+                    ->trueLabel(__('app.active'))
+                    ->falseLabel(__('app.inactive'))
                     ->native(false),
 
                 Filter::make('low_stock')
-                    ->label('Low Stock (≤ 10)')
+                    ->label(__('app.low_stock'))
                     ->query(fn ($query) => $query->where('stock', '<=', 10)->where('stock', '>', 0))
                     ->toggle(),
 
                 Filter::make('out_of_stock')
-                    ->label('Out of Stock')
+                    ->label(__('app.out_of_stock'))
                     ->query(fn ($query) => $query->where('stock', '<=', 0))
                     ->toggle(),
             ])
@@ -105,20 +110,21 @@ class ProductsTable
                     ViewAction::make(),
                     EditAction::make(),
                     Action::make('adjustStock')
-                        ->label('Adjust Stock')
+                        ->label(__('app.adjust_stock'))
                         ->icon('heroicon-o-archive-box-arrow-down')
                         ->color('warning')
                         ->form([
                             Radio::make('type')
                                 ->options([
-                                    'add' => 'Add Stock',
-                                    'subtract' => 'Subtract Stock',
-                                    'set' => 'Set Stock',
+                                    'add' => __('app.add_stock'),
+                                    'subtract' => __('app.subtract_stock'),
+                                    'set' => __('app.set_stock'),
                                 ])
                                 ->default('add')
                                 ->required()
                                 ->inline(),
                             TextInput::make('quantity')
+                                ->label(__('app.quantity'))
                                 ->numeric()
                                 ->required()
                                 ->minValue(0),
@@ -138,12 +144,12 @@ class ProductsTable
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                     BulkAction::make('activate')
-                        ->label('Activate')
+                        ->label(__('app.activate'))
                         ->icon('heroicon-o-check')
                         ->color('success')
                         ->action(fn ($records) => $records->each->update(['is_active' => true])),
                     BulkAction::make('deactivate')
-                        ->label('Deactivate')
+                        ->label(__('app.deactivate'))
                         ->icon('heroicon-o-x-mark')
                         ->color('danger')
                         ->action(fn ($records) => $records->each->update(['is_active' => false])),

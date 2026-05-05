@@ -19,12 +19,30 @@ use UnitEnum;
 class UnitResource extends Resource
 {
     protected static ?string $model = Unit::class;
-
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
-
     protected static string|UnitEnum|null $navigationGroup = 'Products';
     protected static ?int $navigationSort = 3; 
     protected static ?string $recordTitleAttribute = 'name';
+
+     public static function getNavigationGroup(): ?string
+    {
+        return __('app.products');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('app.units');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('app.unit');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('app.units');
+    }
 
     public static function form(Schema $schema): Schema
     {

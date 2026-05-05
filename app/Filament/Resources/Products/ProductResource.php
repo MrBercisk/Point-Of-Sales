@@ -20,11 +20,31 @@ use UnitEnum;
 class ProductResource extends Resource
 {
     protected static ?string $model = Product::class;
-
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCube;
-
+    protected static ?int $navigationSort = 1;
     protected static string|UnitEnum|null $navigationGroup = 'Products';
     protected static ?string $recordTitleAttribute = 'name';
+
+      // ── Localization ──────────────────────────────────────────────────
+    public static function getNavigationGroup(): ?string
+    {
+        return __('app.products');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('app.products');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('app.product');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('app.products');
+    }
 
     public static function form(Schema $schema): Schema
     {

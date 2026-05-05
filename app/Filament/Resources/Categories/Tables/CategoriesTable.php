@@ -19,24 +19,31 @@ class CategoriesTable
         return $table
             ->columns([
                 TextColumn::make('name')
+                    ->label(__('app.name'))
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
 
+                TextColumn::make('description')
+                    ->label(__('app.description'))
+                    ->searchable()
+                    ->sortable(),
+
                 TextColumn::make('slug')
+                    ->label(__('app.slug'))
                     ->searchable()
                     ->color('gray')
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('products_count')
-                    ->label('Products')
+                    ->label(__('app.products'))
                     ->counts('products')
                     ->sortable()
                     ->badge()
                     ->color('info'),
 
                 IconColumn::make('is_active')
-                    ->label('Active')
+                    ->label(__('app.active'))
                     ->boolean()
                     ->trueIcon('heroicon-o-check-circle')
                     ->falseIcon('heroicon-o-x-circle')
@@ -44,16 +51,17 @@ class CategoriesTable
                     ->falseColor('danger'),
 
                 TextColumn::make('created_at')
+                    ->label(__('app.created_at'))
                     ->dateTime('d M Y')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 TernaryFilter::make('is_active')
-                    ->label('Active Status')
+                    ->label(__('app.active'))
                     ->boolean()
-                    ->trueLabel('Active only')
-                    ->falseLabel('Inactive only')
+                    ->trueLabel(__('app.active'))
+                    ->falseLabel(__('app.inactive'))
                     ->native(false),
             ])
             ->recordActions([

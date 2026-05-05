@@ -11,16 +11,16 @@ class UnitForm
     public static function configure(Schema $schema): Schema
     {
         return $schema->components([
-            Section::make('Unit Information')
+            Section::make(__('app.unit_information'))
                 ->schema([
                     TextInput::make('name')
-                        ->label('Unit Name')
+                         ->label(__('app.unit_name'))
                         ->required()
                         ->maxLength(255)
                         ->placeholder('e.g. Pieces, Box, Kilogram'),
 
                     TextInput::make('short_name')
-                        ->label('Short Name')
+                         ->label(__('app.short_name'))
                         ->required()
                         ->maxLength(50)
                         ->placeholder('e.g. Pcs, Box, Kg'),

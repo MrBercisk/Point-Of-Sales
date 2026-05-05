@@ -46,6 +46,16 @@ class Settings extends Model
         'whatsapp_enabled'     => 'boolean',
     ];
 
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::saved(function () {
+            static::clearCache();
+        });
+    }
+
+    
     // ─── Helper: ambil row pertama (singleton pattern) ──────────────────────
 
     public static function current(): static
@@ -57,4 +67,5 @@ class Settings extends Model
     {
         Cache::forget('app_settings');
     }
+    
 }

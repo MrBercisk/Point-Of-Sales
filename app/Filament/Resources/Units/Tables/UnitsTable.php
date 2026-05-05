@@ -18,22 +18,23 @@ class UnitsTable
         return $table
             ->columns([
                 TextColumn::make('name')
-                    ->label('Unit Name')
+                    ->label(__('app.unit_name'))
                     ->searchable()
                     ->sortable(),
 
                 TextColumn::make('short_name')
-                    ->label('Short Name')
+                    ->label(__('app.short_name'))
                     ->searchable()
                     ->badge()
                     ->color('info'),
 
                 TextColumn::make('products_count')
-                    ->label('Products')
+                    ->label(__('app.products'))
                     ->counts('products')
                     ->sortable(),
 
                 TextColumn::make('created_at')
+                ->label(__('app.created_at'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

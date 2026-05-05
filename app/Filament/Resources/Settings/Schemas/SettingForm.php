@@ -14,37 +14,42 @@ class SettingForm
 {
     public static function configure(Schema $schema): Schema
     {
-        return $schema->components([
+        return $schema
 
             // ── General ──────────────────────────────────────────────────────
-            Section::make('General')
-                ->description('Informasi umum perusahaan / toko')
+           ->columns(3)  // ← tambahkan ini
+            ->components([
+
+            // ── General ──────────────────────────────────────────────────────
+            Section::make(__('app.general'))
+                ->description(__('app.general_information'))
                 ->schema([
                     TextInput::make('CompanyName')
-                        ->label('Company Name')
+                        ->label(__('app.company_name'))
                         ->required()
                         ->maxLength(191)
-                        ->prefixIcon('heroicon-o-building-office'),
+                        ->prefixIcon('heroicon-o-building-office')
+                        ->columnSpan(2),
 
                     TextInput::make('CompanyPhone')
-                        ->label('Company Phone')
+                         ->label(__('app.company_phone'))
                         ->required()
                         ->maxLength(191)
                         ->prefixIcon('heroicon-o-phone'),
 
                     TextInput::make('email')
-                        ->label('Default Email')
+                         ->label(__('app.email'))
                         ->email()
                         ->required()
                         ->maxLength(191)
                         ->prefixIcon('heroicon-o-envelope'),
 
                     TextInput::make('CompanyAdress')
-                        ->label('Address')
+                         ->label(__('app.address'))
                         ->required()
                         ->maxLength(191)
-                        ->columnSpan(2)
-                        ->prefixIcon('heroicon-o-map-pin'),
+                        ->prefixIcon('heroicon-o-map-pin')
+                        ->columnSpan(2),
 
                     TextInput::make('developed_by')
                         ->label('Developed By')
@@ -53,41 +58,42 @@ class SettingForm
                         ->prefixIcon('heroicon-o-code-bracket'),
 
                     Select::make('default_language')
-                        ->label('Default Language')
+                         ->label(__('app.default_language'))
                         ->options([
                             'en'    => '🇬🇧 English',
-                            'id'    => '🇮🇩 Indonesian',
-                            'fr'    => '🇫🇷 Français',
-                            'ar'    => '🇸🇦 العربية',
-                            'tr'    => '🇹🇷 Turkish',
-                            'th'    => '🇹🇭 Thai',
-                            'hi'    => '🇮🇳 Hindi',
-                            'de'    => '🇩🇪 German',
-                            'es'    => '🇪🇸 Spanish',
-                            'it'    => '🇮🇹 Italian',
-                            'zh'    => '🇨🇳 Simplified Chinese',
-                            'zh-TW' => '🇹🇼 Traditional Chinese',
+                            'Ind'    => '🇮🇩 Indonesian',
+                            'kr'    => '🇰🇷 Korean',
+                            // 'fr'    => '🇫🇷 Français',
+                            // 'ar'    => '🇸🇦 العربية',
+                            // 'tr'    => '🇹🇷 Turkish',
+                            // 'th'    => '🇹🇭 Thai',
+                            // 'hi'    => '🇮🇳 Hindi',
+                            // 'de'    => '🇩🇪 German',
+                            // 'es'    => '🇪🇸 Spanish',
+                            // 'it'    => '🇮🇹 Italian',
+                            // 'zh'    => '🇨🇳 Simplified Chinese',
+                            // 'zh-TW' => '🇹🇼 Traditional Chinese',
                         ])
                         ->required()
                         ->prefixIcon('heroicon-o-language'),
 
                     Toggle::make('show_language')
-                        ->label('Show Language Switcher')
+                        ->label(__('app.show_language'))
                         ->inline(false),
 
-                    Toggle::make('quotation_with_stock')
-                        ->label('Quotation With Stock')
-                        ->inline(false),
+                    // Toggle::make('quotation_with_stock')
+                    //     ->label(__('app.quotation_with_stock'))
+                    //     ->inline(false),
 
                     TextInput::make('footer')
-                        ->label('Footer Text')
+                        ->label(__('app.footer'))
                         ->required()
                         ->maxLength(192)
                         ->columnSpanFull()
                         ->prefixIcon('heroicon-o-document-text'),
 
                     FileUpload::make('logo')
-                        ->label('Company Logo')
+                        ->label(__('app.logo'))
                         ->image()
                         ->disk('public')
                         ->directory('logos')
@@ -95,66 +101,69 @@ class SettingForm
                         ->maxSize(2048)
                         ->columnSpanFull(),
                 ])
-                ->columns(3),
+                ->columns(3)
+                ->columnSpan(2),  // General = 2/3 lebar
 
             // ── Invoice ───────────────────────────────────────────────────────
             Section::make('Invoice')
-                ->description('Pengaturan footer invoice')
+                ->description(__('app.invoice_footer_setting'))
                 ->schema([
                     Toggle::make('is_invoice_footer')
-                        ->label('Tampilkan Footer di Invoice')
+                        ->label(__('app.is_invoice_footer'))
                         ->live()
                         ->inline(false),
 
                     Textarea::make('invoice_footer')
-                        ->label('Invoice Footer Text')
+                        ->label(__('app.invoice_footer'))
                         ->rows(3)
                         ->maxLength(192)
                         ->visible(fn ($get) => $get('is_invoice_footer'))
                         ->columnSpanFull(),
                 ])
-                ->columns(2),
+                ->columns(1)
+                ->columnSpan(1),  // Invoice = 1/3 lebar
 
             // ── POS & Struk ───────────────────────────────────────────────────
             Section::make('POS & Struk')
-                ->description('Informasi yang tampil di struk kasir')
+                ->description(__('app.information_struk_helper'))
                 ->schema([
                     TextInput::make('receipt_store_name')
-                        ->label('Nama Toko di Struk')
+                        ->label(__('app.receipt_store_name'))
                         ->maxLength(191)
                         ->prefixIcon('heroicon-o-building-storefront'),
 
                     TextInput::make('receipt_store_phone')
-                        ->label('Telepon di Struk')
+                        ->label(__('app.receipt_store_phone'))
                         ->maxLength(191)
                         ->prefixIcon('heroicon-o-phone'),
 
                     TextInput::make('receipt_store_address')
-                        ->label('Alamat di Struk')
+                        ->label(__('app.receipt_store_address'))
                         ->maxLength(191)
                         ->prefixIcon('heroicon-o-map-pin'),
 
                     Textarea::make('receipt_footer')
-                        ->label('Footer Struk')
+                        ->label(__('app.receipt_footer'))
                         ->rows(2)
                         ->maxLength(255)
                         ->placeholder('Terima kasih telah berbelanja!')
                         ->columnSpanFull(),
                 ])
-                ->columns(3),
+                ->columns(3)
+                ->columnSpan('full'),  // ← full width
 
             // ── WhatsApp ──────────────────────────────────────────────────────
             Section::make('WhatsApp (Fonnte)')
-                ->description('Konfigurasi pengiriman struk via WhatsApp')
+                ->description(__('app.whatsapp_desc'))
                 ->schema([
                     Toggle::make('whatsapp_enabled')
-                        ->label('Aktifkan Kirim WA')
+                        ->label(__('app.whatsapp_enabled'))
                         ->live()
                         ->inline(false)
                         ->columnSpanFull(),
 
                     TextInput::make('whatsapp_token')
-                        ->label('Device Token Fonnte')
+                        ->label(__('app.whatsapp_token'))
                         ->password()
                         ->revealable()
                         ->maxLength(255)
@@ -169,8 +178,8 @@ class SettingForm
                         ->default('https://api.fonnte.com')
                         ->visible(fn ($get) => $get('whatsapp_enabled')),
                 ])
-                ->columns(2),
-
+                ->columns(2)
+                ->columnSpan('full'), 
         ]);
     }
 }

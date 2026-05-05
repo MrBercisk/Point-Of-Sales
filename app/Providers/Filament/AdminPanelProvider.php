@@ -2,11 +2,13 @@
 
 namespace App\Providers\Filament;
 
+use App\Http\Middleware\SetLocale;
 use App\Livewire\LowStockAlert;
 use App\Livewire\OrdersChart;
 use App\Livewire\RecentOrders;
 use App\Livewire\SalesChart;
 use App\Livewire\StatsOverview;
+use App\Models\Settings;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -29,14 +31,33 @@ class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
+        $settings = Settings::current();
+
+        $logoUrl = $settings->logo ? asset('storage/' . $settings->logo) : null;
         return $panel
             ->default()
             ->id('admin')
             ->path('admin')
+            // ->brandLogo(fn () => view('filament.components.brand'))
+            ->brandName($settings->CompanyName ?? config('app.name'))
+            ->when($logoUrl, fn (Panel $panel) => 
+                $panel->brandLogo($logoUrl)
+            )
+            ->brandLogoHeight('4.5rem')
             ->maxContentWidth('full')
             ->renderHook(
             PanelsRenderHook::GLOBAL_SEARCH_BEFORE,
                 fn () => view('filament.components.fullscreen-button')
+            )
+            ->renderHook(
+            PanelsRenderHook::GLOBAL_SEARCH_BEFORE,
+            fn () => Settings::current()->show_language
+                ? \Livewire\Livewire::mount('language-switcher')
+                : null
+            )
+            ->renderHook(
+                PanelsRenderHook::FOOTER,
+                fn () => view('filament.components.footer')
             )
             ->login()
             ->colors([
@@ -68,6 +89,7 @@ class AdminPanelProvider extends PanelProvider
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
+                SetLocale::class,
             ])
             ->authMiddleware([
                 Authenticate::class,

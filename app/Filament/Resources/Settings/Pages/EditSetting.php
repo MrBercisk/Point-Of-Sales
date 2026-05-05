@@ -16,13 +16,13 @@ class EditSetting extends EditRecord
     {
         return [
             Action::make('clearCache')
-                ->label('Clear Cache')
+                ->label(__('app.clear_cache'))
                 ->icon('heroicon-o-arrow-path')
                 ->color('gray')
                 ->action(function () {
                     Settings::clearCache();
                     Notification::make()
-                        ->title('Cache berhasil dibersihkan!')
+                        ->title(__('app.cache_cleared'))
                         ->success()
                         ->send();
                 }),

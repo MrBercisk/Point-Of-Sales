@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Builder;
 
 class Product extends Model
 {
@@ -170,25 +171,25 @@ class Product extends Model
     /* ------------------------------------------------------------------ */
 
     /** Hanya produk aktif */
-    public function scopeActive($query)
+    public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
     }
 
     /** Hanya produk yang bisa dijual */
-    public function scopeForSelling($query)
+    public function scopeForSelling(Builder $query): Builder
     {
         return $query->where('not_for_selling', false)->where('is_active', true);
     }
 
     /** Hanya produk yang ada stoknya */
-    public function scopeInStock($query)
+    public function scopeInStock(Builder $query): Builder
     {
         return $query->where('stock', '>', 0);
     }
 
     /** Produk dengan stok rendah (di bawah atau sama dengan stock_alert) */
-    public function scopeLowStock($query)
+    public function scopeLowStock(Builder $query): Builder
     {
         return $query->whereColumn('stock', '<=', 'stock_alert')->where('stock', '>', 0);
     }

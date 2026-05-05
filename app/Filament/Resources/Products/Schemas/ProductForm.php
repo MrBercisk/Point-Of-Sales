@@ -28,13 +28,13 @@ class ProductForm
             Group::make()
                 ->schema([
 
-                    Section::make('Product Information')
+                    Section::make(__('app.product_information'))
                         ->schema([
                             TextInput::make('name')
-                                ->label('Name')
+                                ->label(__('app.name'))
                                 ->required()
                                 ->maxLength(255)
-                                ->placeholder('Enter Name Product')
+                                ->placeholder(__('app.enter_name_product'))
                                 ->live(onBlur: true)
                                 ->afterStateUpdated(function (string $operation, $state, Set $set) {
                                     if ($operation !== 'create') return;
@@ -42,7 +42,7 @@ class ProductForm
                                 }),
 
                             FileUpload::make('image')
-                                ->label('Product Image')
+                                ->label(__('app.image'))
                                 ->image()
                                 ->disk('public')
                                 ->directory('products')
@@ -51,34 +51,28 @@ class ProductForm
                                 ->maxSize(2048)
                                 ->helperText('Max 2MB. Recommended: 500x500px'),
 
-                            /* ==========================================
-                             * BARCODE SECTION
-                             * ========================================== */
                             Section::make('Barcode')
                                 ->schema([
-
-                                    /* KIRI — Scan / Input */
                                     TextInput::make('barcode')
-                                        ->label('Scan / Input Code')
-                                        ->placeholder('Scan barcode atau ketik manual...')
+                                        ->label(__('app.barcode'))
+                                        ->placeholder(__('app.barcode_placeholder'))
                                         ->unique(ignoreRecord: true)
                                         ->maxLength(255)
                                         ->live(onBlur: true)
                                         ->prefixIcon('heroicon-o-viewfinder-circle')
-                                        ->helperText('Arahkan scanner ke barcode, atau ketik kode manual.')
+                                        ->helperText(__('app.barcode_helper'))
                                         ->suffixActions([
                                             ActionsAction::make('generateCode')
                                                 ->icon('heroicon-o-arrow-path')
-                                                ->tooltip('Generate kode otomatis')
+                                                ->tooltip(__('app.generate_code'))
                                                 ->action(function (Get $get, Set $set) {
                                                     $symbology = $get('barcode_symbology') ?? 'Code 128';
                                                     $set('barcode', self::generateBarcodeNumber($symbology));
                                                 }),
                                         ]),
 
-                                    /* KANAN — Symbology */
                                     Select::make('barcode_symbology')
-                                        ->label('Barcode Symbology')
+                                        ->label(__('app.barcode_symbology'))
                                         ->required()
                                         ->native(false)
                                         ->options([
@@ -92,9 +86,8 @@ class ProductForm
                                         ])
                                         ->default('Code 128')
                                         ->live()
-                                        ->helperText('Pilih tipe barcode sesuai kebutuhan produk.'),
+                                        ->helperText(__('app.barcode_symbology_helper')),
 
-                                    /* PREVIEW */
                                     Placeholder::make('barcode_preview')
                                         ->label('')
                                         ->columnSpanFull()
@@ -107,15 +100,14 @@ class ProductForm
                                 ->columns(2)
                                 ->columnSpanFull(),
 
-                            /* Category + Brand */
                             Select::make('category_id')
-                                ->label('Category')
+                                ->label(__('app.category'))
                                 ->relationship('category', 'name')
                                 ->required()
                                 ->searchable()
                                 ->preload()
                                 ->native(false)
-                                ->placeholder('Choose Category')
+                                ->placeholder(__('app.choose_category'))
                                 ->createOptionForm([
                                     TextInput::make('name')
                                         ->required()
@@ -130,12 +122,12 @@ class ProductForm
                                 ]),
 
                             Select::make('brand_id')
-                                ->label('Brand')
+                                ->label(__('app.brand'))
                                 ->relationship('brand', 'name')
                                 ->searchable()
                                 ->preload()
                                 ->native(false)
-                                ->placeholder('Choose Brand')
+                                ->placeholder(__('app.choose_brand'))
                                 ->createOptionForm([
                                     TextInput::make('name')
                                         ->required()
@@ -143,7 +135,7 @@ class ProductForm
                                 ]),
 
                             TextInput::make('order_tax')
-                                ->label('Order Tax')
+                                ->label(__('app.order_tax'))
                                 ->numeric()
                                 ->minValue(0)
                                 ->maxValue(100)
@@ -151,7 +143,7 @@ class ProductForm
                                 ->suffix('%'),
 
                             Select::make('tax_type')
-                                ->label('Tax Type')
+                                ->label(__('app.tax_type'))
                                 ->required()
                                 ->native(false)
                                 ->options([
@@ -161,8 +153,8 @@ class ProductForm
                                 ->default('Exclusive'),
 
                             RichEditor::make('description')
-                                ->label('Description')
-                                ->placeholder('A few words ...')
+                                ->label(__('app.description'))
+                                ->placeholder(__('app.description_placeholder'))
                                 ->maxLength(2000)
                                 ->columnSpanFull()
                                 ->toolbarButtons([
@@ -171,90 +163,82 @@ class ProductForm
                         ])
                         ->columns(2),
 
-                    Section::make('Pricing & Inventory')
+                    Section::make(__('app.pricing_inventory'))
                         ->schema([
                             Select::make('type')
-                                ->label('Type')
+                                ->label(__('app.type'))
                                 ->required()
                                 ->native(false)
                                 ->options([
-                                    'Standard Product' => 'Standard Product',
-                                    'Service'          => 'Service',
-                                    'Digital'          => 'Digital',
+                                    'Standard Product' => __('app.standard_product'),
+                                    'Service'          => __('app.service'),
+                                    'Digital'          => __('app.digital'),
                                 ])
                                 ->default('Standard Product'),
 
                             TextInput::make('cost')
-                                ->label('Product Cost')
+                                ->label(__('app.cost'))
                                 ->required()
                                 ->numeric()
                                 ->prefix('Rp')
                                 ->default(0)
-                                ->placeholder('Enter Product Cost'),
+                                ->placeholder(__('app.enter_product_cost')),
 
                             TextInput::make('price')
-                                ->label('Product Price')
+                                ->label(__('app.price'))
                                 ->required()
                                 ->numeric()
                                 ->prefix('Rp')
                                 ->maxValue(9999999999)
                                 ->default(0)
-                                ->placeholder('Enter Product Price'),
+                                ->placeholder(__('app.enter_product_price')),
 
                             Select::make('product_unit_id')
-                                ->label('Product Unit')
+                                ->label(__('app.product_unit'))
                                 ->relationship('productUnit', 'name')
                                 ->required()
                                 ->searchable()
                                 ->preload()
                                 ->native(false)
-                                ->placeholder('Choose Product Unit'),
+                                ->placeholder(__('app.choose_product_unit')),
 
                             Select::make('sale_unit_id')
-                                ->label('Sale Unit')
+                                ->label(__('app.sale_unit'))
                                 ->relationship('saleUnit', 'name')
                                 ->required()
                                 ->searchable()
                                 ->preload()
                                 ->native(false)
-                                ->placeholder('Choose Sale Unit'),
+                                ->placeholder(__('app.choose_sale_unit')),
 
                             Select::make('purchase_unit_id')
-                                ->label('Purchase Unit')
+                                ->label(__('app.purchase_unit'))
                                 ->relationship('purchaseUnit', 'name')
                                 ->required()
                                 ->searchable()
                                 ->preload()
                                 ->native(false)
-                                ->placeholder('Choose Purchase Unit'),
+                                ->placeholder(__('app.choose_purchase_unit')),
 
                             TextInput::make('stock_alert')
-                                ->label('Stock Alert')
+                                ->label(__('app.stock_alert'))
                                 ->numeric()
                                 ->minValue(0)
                                 ->default(0)
-                                ->helperText('Notifikasi saat stok ≤ angka ini'),
+                                ->helperText(__('app.stock_alert_helper')),
                         ])
                         ->columns(2),
-
-                    Section::make()
-                        ->schema([
-                            Checkbox::make('has_imei_serial')
-                                ->label('Product Has Imei/Serial Number'),
-                            Checkbox::make('not_for_selling')
-                                ->label('This Product Not For Selling'),
-                        ]),
                 ])
                 ->columnSpan(['lg' => 2]),
 
             Group::make()
                 ->schema([
-                    Section::make('Status')
+                    Section::make(__('app.status'))
                         ->schema([
                             Toggle::make('is_active')
-                                ->label('Active')
+                                ->label(__('app.active'))
                                 ->default(true)
-                                ->helperText('Inactive products won\'t appear in POS'),
+                                ->helperText(__('app.inactive_products_helper')),
                         ]),
 
                     Section::make('SEO')
@@ -264,7 +248,7 @@ class ProductForm
                                 ->maxLength(255)
                                 ->unique(ignoreRecord: true)
                                 ->readOnlyOn('edit')
-                                ->helperText('Auto-generated from name'),
+                                ->helperText(__('app.slug_helper')),
                         ]),
                 ])
                 ->columnSpan(['lg' => 1]),

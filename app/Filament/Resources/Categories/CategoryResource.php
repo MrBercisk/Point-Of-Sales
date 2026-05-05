@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Filament\Resources\Categories;
 
 use App\Filament\Resources\Categories\Pages\CreateCategory;
@@ -20,12 +19,32 @@ use UnitEnum;
 class CategoryResource extends Resource
 {
     protected static ?string $model = Category::class;
-
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTag;
-
     protected static string|UnitEnum|null $navigationGroup = 'Products';
-    protected static ?int $navigationSort = 2; 
+    protected static ?int $navigationSort = 2;
     protected static ?string $recordTitleAttribute = 'name';
+
+    // ── Localization ──────────────────────────────────────────────────
+    public static function getNavigationGroup(): ?string
+    {
+        return __('app.products');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('app.categories');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('app.category');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('app.categories');
+    }
+    // ─────────────────────────────────────────────────────────────────
 
     public static function form(Schema $schema): Schema
     {
@@ -44,18 +63,16 @@ class CategoryResource extends Resource
 
     public static function getRelations(): array
     {
-        return [
-            //
-        ];
+        return [];
     }
 
     public static function getPages(): array
     {
         return [
-            'index' => ListCategories::route('/'),
+            'index'  => ListCategories::route('/'),
             'create' => CreateCategory::route('/create'),
-            'view' => ViewCategory::route('/{record}'),
-            'edit' => EditCategory::route('/{record}/edit'),
+            'view'   => ViewCategory::route('/{record}'),
+            'edit'   => EditCategory::route('/{record}/edit'),
         ];
     }
 

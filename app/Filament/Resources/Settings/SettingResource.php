@@ -23,6 +23,19 @@ class SettingResource extends Resource
     // protected static ?string $navigationGroup = 'System';
     protected static ?int    $navigationSort  = 99;
 
+     public static function getNavigationLabel(): string
+    {
+        return __('app.settings');
+    }
+      public static function getModelLabel(): string
+    {
+        return __('app.setting');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('app.settings');
+    }
     public static function form(Schema $schema): Schema
     {
         return SettingForm::configure($schema);
