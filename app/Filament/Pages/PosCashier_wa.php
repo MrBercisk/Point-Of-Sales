@@ -7,8 +7,8 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Category;
 use App\Models\Student;
-use App\Models\Settings;
 use App\Services\ReceiptService;
+use App\Services\WhatsAppService;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
@@ -19,7 +19,7 @@ use BackedEnum;
 use Filament\Support\Icons\Heroicon;
 use UnitEnum;
 
-class PosCashier extends Page implements HasForms
+class PosCashier_wa extends Page implements HasForms
 {
     use InteractsWithForms;
 
@@ -37,13 +37,13 @@ class PosCashier extends Page implements HasForms
     public Collection $cart;
 
     // Siswa yang sedang bertransaksi
-    public ?int    $selectedStudentId     = null;
-    public ?string $selectedStudentName   = null;
-    public ?string $selectedStudentClass  = null;
+    public ?int    $selectedStudentId   = null;
+    public ?string $selectedStudentName = null;
+    public ?string $selectedStudentClass = null;
     public float   $selectedStudentBalance = 0;
 
     // Search siswa di kasir
-    public string $searchStudent       = '';
+    public string $searchStudent = '';
     public bool   $showStudentDropdown = false;
 
     // Produk
@@ -57,6 +57,7 @@ class PosCashier extends Page implements HasForms
     // Modal struk
     public bool   $showReceiptModal = false;
     public ?array $lastOrder        = null;
+    // public bool   $isSendingWhatsApp = false;
 
     /* ------------------------------------------------------------------ */
     /* Mount                                                                */
@@ -72,9 +73,8 @@ class PosCashier extends Page implements HasForms
     /* ------------------------------------------------------------------ */
 
     // #[Computed] → method ini otomatis di-cache & reaktif (Livewire 3).
-    // Dipanggil seperti property: $this->categories (tanpa kurung).
+    // Dipanggil seperti property: $this->products (tanpa kurung).
     // Query DB hanya dijalankan 1x per render, meski dipanggil berkali-kali.
-
     #[Computed]
     public function categories(): Collection
     {
@@ -163,7 +163,7 @@ class PosCashier extends Page implements HasForms
         $this->searchStudent          = $student->name . ' — Kelas ' . $student->class;
         $this->showStudentDropdown    = false;
 
-        // Default ke dompet saat siswa dipilih
+        // Default ke dompet
         $this->paymentMethod = 'wallet';
     }
 
@@ -351,6 +351,7 @@ class PosCashier extends Page implements HasForms
                 'subtotal'   => $item['price'] * $item['quantity'],
             ]);
 
+            // Kurangi stok produk
             Product::find($item['product_id'])?->reduceStock($item['quantity']);
         }
 
@@ -372,36 +373,46 @@ class PosCashier extends Page implements HasForms
             $receiptService = app(ReceiptService::class);
             $pdfPath        = $receiptService->generatePdf($order->load('items.product'));
         } catch (\Throwable) {
-            // PDF gagal generate tidak menghentikan proses transaksi
+            // PDF gagal generate tidak menghentikan proses
         }
 
-        // ── Ambil setting toko untuk modal struk ───────────────────────
-        $settings = Settings::current();
+        // ── Kirim WA ke orang tua siswa ────────────────────────────────
+        // $parentPhone = $order->customer_phone;
+        // if ($parentPhone && $pdfPath) {
+        //     try {
+        //         app(WhatsAppService::class)->sendReceipt(
+        //             $parentPhone,
+        //             $order->load('items.product'),
+        //             $pdfPath
+        //         );
+        //     } catch (\Throwable $e) {
+        //         Notification::make()
+        //             ->title('WhatsApp gagal dikirim')
+        //             ->body($e->getMessage())
+        //             ->warning()
+        //             ->send();
+        //     }
+        // }
 
         // ── Simpan data untuk modal struk ──────────────────────────────
         $this->lastOrder = [
-            'id'             => $order->id,
-            'invoice_number' => $order->invoice_number ?? "ORD-{$order->id}",
-            'student_name'   => $this->selectedStudentName,
-            'student_class'  => $this->selectedStudentClass,
-            'payment_method' => $this->paymentMethod,
-            'total_amount'   => $total,
-            'cash_amount'    => $this->cashAmount,
-            'change_amount'  => $this->kembalian(),
-            'balance_after'  => $balanceAfter,
-            'created_at'     => $order->created_at->format('d/m/Y H:i'),
-            'items'          => $this->cart->toArray(),
-            'pdf_url'        => $pdfPath ? route('receipt.download', $order->id) : null,
-            // Data toko dari Settings (untuk modal & ESC/POS)
-            'store_name'     => $settings->receipt_store_name    ?: 'Kantin Sekolah',
-            'store_address'  => $settings->receipt_store_address ?: '',
-            'store_phone'    => $settings->receipt_store_phone   ?: '',
-            'store_footer'   => $settings->receipt_footer        ?: 'Terima kasih telah berbelanja!',
+            'id'              => $order->id,
+            'invoice_number'  => $order->invoice_number ?? "ORD-{$order->id}",
+            'student_name'    => $this->selectedStudentName,
+            'student_class'   => $this->selectedStudentClass,
+            'payment_method'  => $this->paymentMethod,
+            'total_amount'    => $total,
+            'cash_amount'     => $this->cashAmount,
+            'change_amount'   => $this->kembalian(),
+            'balance_after'   => $balanceAfter,
+            'created_at'      => $order->created_at->format('d/m/Y H:i'),
+            'items'           => $this->cart->toArray(),
+            'pdf_url'         => $pdfPath ? route('receipt.download', $order->id) : null,
         ];
 
-        // ── Reset state (cashAmount TIDAK di-reset di sini agar tidak ──
-        // ── mengganggu input — di-reset hanya setelah modal ditutup)  ──
+        // ── Reset state ────────────────────────────────────────────────
         $this->cart             = collect();
+        $this->cashAmount       = 0;
         $this->showReceiptModal = true;
 
         // Reset siswa agar siap untuk transaksi berikutnya
@@ -427,8 +438,6 @@ class PosCashier extends Page implements HasForms
     {
         $this->showReceiptModal = false;
         $this->lastOrder        = null;
-        // Reset cash di sini — setelah modal ditutup, aman di-reset
-        $this->cashAmount       = 0;
     }
 
     public function clearCart(): void
