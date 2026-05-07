@@ -12,9 +12,9 @@ use UnitEnum;
 class ReceiptSettings extends Page
 {
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedReceiptPercent;
-    protected static ?string $navigationLabel = 'Struk Kasir';
+    protected static ?string $navigationLabel = 'Receipt Settings';
     protected static ?string $title           = 'Pengaturan Struk Kasir';
-    protected static string|UnitEnum|null $navigationGroup = 'Sales';
+    protected static string|UnitEnum|null $navigationGroup = 'Settings';
     protected static ?int $navigationSort     = 10;
     protected string $view = 'filament.pages.receipt-settings';
 

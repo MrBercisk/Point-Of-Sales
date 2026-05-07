@@ -2,7 +2,7 @@
 return [
     'dashboard'     => 'Dasbor',
     'settings'      => 'Pengaturan',
-    'setting'       => 'Pengaturan',
+    'system_setting'=> 'Pengaturan Sistem',
     'products'      => 'Produk',
     'categories'    => 'Kategori',
     'brands'        => 'Merek',

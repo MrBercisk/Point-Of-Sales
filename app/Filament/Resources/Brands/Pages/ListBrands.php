@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\BrandResource\Pages;
+namespace App\Filament\Resources\Brands\Pages;
 
 use App\Filament\Resources\BrandResource;
 use App\Filament\Resources\Brands\BrandResource as BrandsBrandResource;

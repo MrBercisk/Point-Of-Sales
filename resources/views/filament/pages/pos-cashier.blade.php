@@ -220,7 +220,7 @@
         </div>
 
         {{-- Product grid --}}
-        <div class="prod-body" wire:poll.15s="refreshProducts">
+        <div class="prod-body" wire:poll.30s="refreshProducts">
             <div class="prod-grid">
                 @forelse($this->products as $product)
                 @php
@@ -230,7 +230,7 @@
                 <button class="prod-card {{ $inCart ? 'in-cart' : '' }}" wire:click="addToCart({{ $product->id }})" wire:key="prod-{{ $product->id }}">
                     <div class="pc-img-wrap">
                         @if($product->image)
-                            <img src="{{ Storage::url($product->image) }}" alt="{{ $product->name }}" loading="lazy">
+                            <img src="{{ Storage::url($product->image) }}" alt="{{ $product->name }}" loading="lazy" decoding="async">
                         @else
                             <div class="pc-img-placeholder">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/></svg>
@@ -718,6 +718,7 @@
 
 @push('scripts')
 <script>
+
 document.addEventListener('alpine:init', () => {
     Alpine.data('receiptModal', (order) => ({
         order,
@@ -840,6 +841,21 @@ document.addEventListener('alpine:init', () => {
         }
     }));
 
+});
+document.addEventListener('livewire:initialized', () => {
+    Livewire.on('notify', ({ type, message }) => {
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+            position:fixed; bottom:20px; right:20px; z-index:99999;
+            padding:10px 16px; border-radius:8px; font-size:13px; font-weight:600;
+            color:#fff; animation: fadeIn .2s ease;
+            background: ${type === 'error' ? '#ef4444' : '#16a34a'};
+            box-shadow: 0 4px 12px rgba(0,0,0,.15);
+        `;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2000);
+    });
 });
 
 // ── Beep scanner ────────────────────────────────────────────────────

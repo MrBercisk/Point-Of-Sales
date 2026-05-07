@@ -2,8 +2,8 @@
 
 namespace App\Filament\Resources\Transactions;
 
-use App\Filament\Resources\Transactions\WalletTransactionResource\Pages;
-use App\Filament\Resources\Transactions\WalletTransactionResource\Schemas\WalletTransactionTable;
+use App\Filament\Resources\Transactions\Pages\ListWalletTransactions;
+use App\Filament\Resources\Transactions\Tables\WalletTransactionTable;
 use App\Models\WalletTransaction;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -41,7 +41,7 @@ class WalletTransactionResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListWalletTransactions::route('/'),
+            'index' => ListWalletTransactions::route('/'),
         ];
     }
 }

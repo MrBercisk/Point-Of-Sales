@@ -18,6 +18,7 @@ use Livewire\Attributes\Computed;
 use BackedEnum;
 use Filament\Facades\Filament;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Facades\Cache;
 use UnitEnum;
 
 class PosCashier extends Page implements HasForms
@@ -58,6 +59,8 @@ class PosCashier extends Page implements HasForms
     
     public bool $showCheckoutModal = false;
 
+    protected bool $lazyLoad = false;
+
 
     
     // fullscreen tanpa sidebar/navbar
@@ -83,29 +86,28 @@ class PosCashier extends Page implements HasForms
     #[Computed]
     public function categories(): Collection
     {
-        return Category::where('is_active', true)
-            ->withCount('products')
-            ->orderBy('name')
-            ->get();
+        return Cache::remember('pos_categories', 60, fn() =>
+            Category::where('is_active', true)
+                ->withCount('products')
+                ->orderBy('name')
+                ->get()
+        );
     }
 
     #[Computed]
     public function products(): Collection
     {
         return Product::query()
+            ->select('id', 'name', 'price', 'stock', 'image', 'barcode', 'category_id')
             ->where('is_active', true)
             ->where('stock', '>', 0)
-            ->when($this->searchProduct, fn ($q) =>
+            ->when($this->searchProduct, fn($q) =>
                 $q->where('name', 'like', '%' . $this->searchProduct . '%')
-                  ->orWhere('barcode', $this->searchProduct)
+                ->orWhere('barcode', $this->searchProduct)
             )
-            ->when($this->selectedCategory, fn ($q) =>
+            ->when($this->selectedCategory, fn($q) =>
                 $q->where('category_id', $this->selectedCategory)
             )
-            ->when($this->selectedBrand, fn ($q) =>
-                $q->where('brand_id', $this->selectedBrand)
-            )
-            ->with(['category', 'brand'])
             ->orderBy('name')
             ->get();
     }
@@ -203,20 +205,15 @@ class PosCashier extends Page implements HasForms
         $product = Product::find($productId);
 
         if (! $product || $product->stock <= 0) {
-            Notification::make()->title('Stok habis!')->danger()->send();
+            $this->dispatch('notify', type: 'error', message: 'Stok habis!');
             return;
         }
-
-        $existingIndex = $this->cart->search(fn ($item) => $item['product_id'] === $productId);
+            $existingIndex = $this->cart->search(fn ($item) => $item['product_id'] === $productId);
 
         if ($existingIndex !== false) {
             $currentQty = $this->cart[$existingIndex]['quantity'];
             if ($currentQty >= $product->stock) {
-                Notification::make()
-                    ->title('Stok tidak cukup!')
-                    ->body("Stok tersedia: {$product->stock}")
-                    ->danger()
-                    ->send();
+                $this->dispatch('notify', type: 'error', message: "Stok tidak cukup! Tersedia: {$product->stock}");
                 return;
             }
             $cart = $this->cart->toArray();
@@ -234,7 +231,6 @@ class PosCashier extends Page implements HasForms
         }
 
         $this->dispatch('product-added');
-        Notification::make()->title('Ditambahkan ke keranjang')->success()->duration(800)->send();
     }
 
     public function removeFromCart(int $index): void

@@ -1,0 +1,337 @@
+/* ============================================================
+   Rasa Nusa — Modern Filament Sidebar & Navbar
+   Warna primer tetap hijau (#16a34a)
+   ============================================================ */
+
+/* ---------- CSS Variables ---------- */
+:root {
+    --sidebar-bg: #ffffff;
+    --sidebar-border: #e8f5e9;
+    --sidebar-width: 220px;
+    --nav-item-radius: 10px;
+    --nav-active-bg: #16a34a;
+    --nav-active-text: #ffffff;
+    --nav-hover-bg: #f0fdf4;
+    --nav-hover-text: #15803d;
+    --nav-text: #4b5563;
+    --nav-icon-color: #9ca3af;
+    --nav-active-icon: #ffffff;
+    --topbar-bg: #ffffff;
+    --topbar-border: #f3f4f6;
+    --brand-text: #15803d;
+    --shadow-sidebar: 0 0 30px 0 rgba(22, 163, 74, 0.07);
+    --shadow-topbar: 0 1px 0 0 #f3f4f6, 0 2px 8px 0 rgba(0,0,0,0.04);
+}
+
+/* ============================================================
+   TOPBAR / NAVBAR
+   ============================================================ */
+
+/* Topbar container */
+.fi-topbar {
+    background: var(--topbar-bg) !important;
+    border-bottom: 1px solid var(--topbar-border) !important;
+    box-shadow: var(--shadow-topbar) !important;
+    height: 64px !important;
+    padding: 0 1.5rem !important;
+    backdrop-filter: blur(8px) !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 50 !important;
+}
+
+.fi-topbar nav {
+    height: 64px !important;
+    align-items: center !important;
+}
+
+/* Search bar */
+.fi-global-search-field {
+    background: #f9fafb !important;
+    border: 1.5px solid #e5e7eb !important;
+    border-radius: 12px !important;
+    transition: all 0.2s ease !important;
+    font-size: 0.875rem !important;
+    color: #374151 !important;
+    padding: 0 1rem !important;
+    height: 40px !important;
+}
+
+.fi-global-search-field:focus-within {
+    border-color: #16a34a !important;
+    background: #fff !important;
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12) !important;
+}
+
+.fi-global-search-field input {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    font-size: 0.875rem !important;
+}
+
+/* Topbar icon buttons (notification, etc.) */
+.fi-topbar button,
+.fi-topbar [type="button"] {
+    border-radius: 10px !important;
+    transition: background 0.15s, color 0.15s !important;
+}
+
+.fi-topbar button:hover {
+    background: #f0fdf4 !important;
+    color: #16a34a !important;
+}
+
+/* Date badge in topbar */
+.fi-topbar .fi-badge,
+.fi-topbar [class*="badge"] {
+    background: #f0fdf4 !important;
+    color: #15803d !important;
+    border: 1px solid #bbf7d0 !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    font-size: 0.75rem !important;
+    padding: 4px 10px !important;
+}
+
+/* User avatar in topbar */
+.fi-topbar .fi-avatar,
+.fi-topbar img[class*="avatar"] {
+    border-radius: 50% !important;
+    border: 2px solid #bbf7d0 !important;
+    width: 36px !important;
+    height: 36px !important;
+}
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+
+/* Sidebar wrapper */
+.fi-sidebar {
+    background: var(--sidebar-bg) !important;
+    border-right: 1px solid var(--sidebar-border) !important;
+    box-shadow: var(--shadow-sidebar) !important;
+    width: var(--sidebar-width) !important;
+    padding: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+/* Sidebar inner scroll area */
+.fi-sidebar-nav {
+    padding: 0.75rem 0.75rem 1rem !important;
+    flex: 1 !important;
+    overflow-y: auto !important;
+}
+
+/* ---- Brand / Logo ---- */
+.fi-sidebar-header {
+    padding: 1.25rem 1rem 1rem !important;
+    border-bottom: 1px solid #f0fdf4 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.625rem !important;
+}
+
+.fi-logo {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.625rem !important;
+    text-decoration: none !important;
+}
+
+.fi-logo img {
+    height: 2.5rem !important;
+    width: auto !important;
+    border-radius: 8px !important;
+}
+
+.fi-logo span,
+.fi-logo .fi-brand-name {
+    font-size: 1.1rem !important;
+    font-weight: 700 !important;
+    color: var(--brand-text) !important;
+    letter-spacing: -0.02em !important;
+}
+
+/* ---- Navigation Group Labels ---- */
+.fi-sidebar-group-label {
+    font-size: 0.7rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.08em !important;
+    text-transform: uppercase !important;
+    color: #9ca3af !important;
+    padding: 1rem 0.75rem 0.35rem !important;
+    margin: 0 !important;
+}
+
+/* ---- Nav Items ---- */
+.fi-sidebar-item {
+    margin: 2px 0 !important;
+}
+
+.fi-sidebar-item-button,
+.fi-sidebar-item > a {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.625rem !important;
+    padding: 0.55rem 0.875rem !important;
+    border-radius: var(--nav-item-radius) !important;
+    font-size: 0.875rem !important;
+    font-weight: 500 !important;
+    color: var(--nav-text) !important;
+    text-decoration: none !important;
+    transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+/* Hover state */
+.fi-sidebar-item-button:hover,
+.fi-sidebar-item > a:hover {
+    background: var(--nav-hover-bg) !important;
+    color: var(--nav-hover-text) !important;
+}
+
+.fi-sidebar-item-button:hover svg,
+.fi-sidebar-item > a:hover svg {
+    color: #16a34a !important;
+}
+
+/* Active / selected state */
+.fi-sidebar-item-button.fi-active,
+.fi-sidebar-item > a.fi-active,
+.fi-sidebar-item-button[aria-current="page"],
+.fi-sidebar-item > a[aria-current="page"],
+.fi-sidebar-item.fi-active > a,
+.fi-sidebar-item.fi-active .fi-sidebar-item-button {
+    background: var(--nav-active-bg) !important;
+    color: var(--nav-active-text) !important;
+    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3) !important;
+    font-weight: 600 !important;
+}
+
+.fi-sidebar-item-button.fi-active svg,
+.fi-sidebar-item > a.fi-active svg,
+.fi-sidebar-item-button[aria-current="page"] svg,
+.fi-sidebar-item > a[aria-current="page"] svg,
+.fi-sidebar-item.fi-active > a svg,
+.fi-sidebar-item.fi-active .fi-sidebar-item-button svg {
+    color: #ffffff !important;
+}
+
+/* Active item label */
+.fi-sidebar-item-button.fi-active .fi-sidebar-item-label,
+.fi-sidebar-item > a.fi-active .fi-sidebar-item-label,
+.fi-sidebar-item.fi-active > a .fi-sidebar-item-label {
+    color: #ffffff !important;
+}
+
+/* Nav item icons */
+.fi-sidebar-item-icon,
+.fi-sidebar-item svg {
+    width: 1.1rem !important;
+    height: 1.1rem !important;
+    flex-shrink: 0 !important;
+    color: var(--nav-icon-color) !important;
+    transition: color 0.15s !important;
+}
+
+/* ---- Sidebar Footer (User profile) ---- */
+.fi-sidebar-footer {
+    padding: 0.75rem !important;
+    border-top: 1px solid #f0fdf4 !important;
+    margin-top: auto !important;
+}
+
+.fi-user-avatar-wrapper,
+.fi-sidebar-footer .fi-avatar {
+    border-radius: 50% !important;
+    border: 2px solid #bbf7d0 !important;
+}
+
+.fi-sidebar-footer .fi-user-name {
+    font-weight: 600 !important;
+    font-size: 0.8125rem !important;
+    color: #111827 !important;
+}
+
+.fi-sidebar-footer .fi-user-email {
+    font-size: 0.75rem !important;
+    color: #9ca3af !important;
+}
+
+/* ---- Collapse Button ---- */
+.fi-sidebar-collapse-btn {
+    border-radius: 8px !important;
+    color: #9ca3af !important;
+    transition: background 0.15s, color 0.15s !important;
+    padding: 0.35rem !important;
+}
+
+.fi-sidebar-collapse-btn:hover {
+    background: #f0fdf4 !important;
+    color: #16a34a !important;
+}
+
+/* ============================================================
+   MAIN CONTENT AREA — subtle adjustments
+   ============================================================ */
+
+.fi-main {
+    background: #f8fafc !important;
+}
+
+/* Page header */
+.fi-header {
+    background: transparent !important;
+    padding-top: 1.5rem !important;
+}
+
+.fi-header-heading {
+    font-weight: 700 !important;
+    font-size: 1.4rem !important;
+    color: #111827 !important;
+    letter-spacing: -0.02em !important;
+}
+
+/* ============================================================
+   SCROLLBAR — styled for sidebar
+   ============================================================ */
+
+.fi-sidebar-nav::-webkit-scrollbar {
+    width: 4px !important;
+}
+
+.fi-sidebar-nav::-webkit-scrollbar-track {
+    background: transparent !important;
+}
+
+.fi-sidebar-nav::-webkit-scrollbar-thumb {
+    background: #d1fae5 !important;
+    border-radius: 99px !important;
+}
+
+/* ============================================================
+   MOBILE — sidebar overlay
+   ============================================================ */
+
+@media (max-width: 1024px) {
+    .fi-sidebar {
+        box-shadow: 4px 0 24px rgba(22, 163, 74, 0.12) !important;
+    }
+}
+
+.fi-topbar .fi-logo,
+.fi-topbar .fi-brand-name,
+.fi-topbar [class*="brand"],
+.fi-topbar .fi-sidebar-header {
+    display: none !important;
+}
+ 
+/* Pastikan logo di sidebar tetap tampil */
+.fi-sidebar .fi-logo,
+.fi-sidebar-header .fi-logo {
+    display: flex !important;
+}

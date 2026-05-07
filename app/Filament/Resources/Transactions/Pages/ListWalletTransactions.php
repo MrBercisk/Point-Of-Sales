@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\Transactions\WalletTransactionResource\Pages;
+namespace App\Filament\Resources\Transactions\Pages;
 
 use App\Filament\Resources\Transactions\WalletTransactionResource;
 use App\Filament\Resources\Transactions\Widgets\TransactionStatsWidget as WidgetsTransactionStatsWidget;

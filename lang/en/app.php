@@ -2,6 +2,7 @@
 return [
     'dashboard'     => 'Dashboard',
     'settings'      => 'Settings',
+    'system_setting'=> 'System Settings',
     'products'      => 'Products',
     'categories'    => 'Categories',
     'brands'        => 'Brands',

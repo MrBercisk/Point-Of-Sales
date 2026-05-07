@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Brands;
 
-use App\Filament\Resources\BrandResource\Pages\ListBrands as PagesListBrands;
+use App\Filament\Resources\Brands\Pages\ListBrands as PagesListBrands;
 use App\Filament\Resources\BrandResource\Schemas\BrandForm as SchemasBrandForm;
 use App\Filament\Resources\BrandResource\Schemas\BrandsTable as SchemasBrandsTable;
 use App\Filament\Resources\Brands\Pages\CreateBrand;

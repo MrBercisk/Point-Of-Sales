@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\Topup\Schemas;
+namespace App\Filament\Resources\Topup\Tables;
 
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;

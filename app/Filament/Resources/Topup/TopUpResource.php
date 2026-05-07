@@ -5,7 +5,7 @@ namespace App\Filament\Resources\Topup;
 use App\Filament\Resources\Topup\Pages\CreateTopUp;
 use App\Filament\Resources\Topup\Pages\ListTopUps;
 use App\Filament\Resources\Topup\Schemas\TopUpForm;
-use App\Filament\Resources\Topup\Schemas\TopUpTable;
+use App\Filament\Resources\Topup\Tables\TopUpTable;
 use App\Models\WalletTransaction;
 use BackedEnum;
 use Filament\Resources\Resource;

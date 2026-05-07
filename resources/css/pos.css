@@ -866,3 +866,5 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); }
 .co-btn-complete:hover:not(:disabled) { background: linear-gradient(135deg, #15803d, #14532d); }
 .co-btn-complete:disabled { background: #d1d5db; box-shadow: none; cursor: not-allowed; }
 .co-btn-complete svg, .co-btn-cancel svg { width: 17px; height: 17px; }
+
+@keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }

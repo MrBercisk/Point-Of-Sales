@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\Transactions\WalletTransactionResource\Schemas;
+namespace App\Filament\Resources\Transactions\Tables;
 
 use App\Models\Student;
 use Filament\Forms\Components\DatePicker;
