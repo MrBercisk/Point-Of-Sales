@@ -24,7 +24,7 @@ class PosCashier_wa extends Page implements HasForms
     use InteractsWithForms;
 
     protected static string|BackedEnum|null $navigationIcon  = Heroicon::ComputerDesktop;
-    protected static ?string $navigationLabel = 'POS Cashier';
+    protected static ?string $navigationLabel = 'POS Cashier WA';
     protected static ?string $title           = 'Point of Sale';
     protected static string|UnitEnum|null $navigationGroup   = 'Sales';
     protected static ?int $navigationSort     = 2;
@@ -447,5 +447,9 @@ class PosCashier_wa extends Page implements HasForms
         $this->clearStudent();
 
         Notification::make()->title('Keranjang dikosongkan')->send();
+    }
+      public static function shouldRegisterNavigation(): bool
+    {
+        return false;
     }
 }

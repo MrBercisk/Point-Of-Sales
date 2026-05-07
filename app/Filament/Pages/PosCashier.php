@@ -16,6 +16,7 @@ use Filament\Pages\Page;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
 use BackedEnum;
+use Filament\Facades\Filament;
 use Filament\Support\Icons\Heroicon;
 use UnitEnum;
 
@@ -26,9 +27,23 @@ class PosCashier extends Page implements HasForms
     protected static string|BackedEnum|null $navigationIcon  = Heroicon::ComputerDesktop;
     protected static ?string $navigationLabel = 'POS Cashier';
     protected static ?string $title           = 'Point of Sale';
+    protected static ?string $slug = 'pos-cashier';
     protected static string|UnitEnum|null $navigationGroup   = 'Sales';
     protected static ?int $navigationSort     = 2;
     protected string $view                    = 'filament.pages.pos-cashier';
+
+    
+    // ── Override layout → fullscreen tanpa sidebar/navbar ──
+    public function getLayout(): string
+    {
+       return 'filament.layouts.pos'; 
+    }
+    public function getLayoutData(): array
+    {
+        return [
+            'title' => 'POS Cashier',
+        ];
+    }
 
     /* ------------------------------------------------------------------ */
     /* State                                                                */
@@ -36,25 +51,21 @@ class PosCashier extends Page implements HasForms
 
     public Collection $cart;
 
-    // Siswa yang sedang bertransaksi
     public ?int    $selectedStudentId     = null;
     public ?string $selectedStudentName   = null;
     public ?string $selectedStudentClass  = null;
     public float   $selectedStudentBalance = 0;
 
-    // Search siswa di kasir
     public string $searchStudent       = '';
     public bool   $showStudentDropdown = false;
 
-    // Produk
     public string $searchProduct    = '';
     public ?int   $selectedCategory = null;
+    public ?int   $selectedBrand    = null;
 
-    // Pembayaran
-    public string $paymentMethod = 'wallet'; // wallet | cash
-    public float  $cashAmount    = 0;        // jika bayar tunai
+    public string $paymentMethod = 'wallet';
+    public float  $cashAmount    = 0;
 
-    // Modal struk
     public bool   $showReceiptModal = false;
     public ?array $lastOrder        = null;
 
@@ -70,10 +81,6 @@ class PosCashier extends Page implements HasForms
     /* ------------------------------------------------------------------ */
     /* Computed                                                             */
     /* ------------------------------------------------------------------ */
-
-    // #[Computed] → method ini otomatis di-cache & reaktif (Livewire 3).
-    // Dipanggil seperti property: $this->categories (tanpa kurung).
-    // Query DB hanya dijalankan 1x per render, meski dipanggil berkali-kali.
 
     #[Computed]
     public function categories(): Collection
@@ -92,11 +99,15 @@ class PosCashier extends Page implements HasForms
             ->where('stock', '>', 0)
             ->when($this->searchProduct, fn ($q) =>
                 $q->where('name', 'like', '%' . $this->searchProduct . '%')
+                  ->orWhere('barcode', $this->searchProduct)
             )
             ->when($this->selectedCategory, fn ($q) =>
                 $q->where('category_id', $this->selectedCategory)
             )
-            ->with('category')
+            ->when($this->selectedBrand, fn ($q) =>
+                $q->where('brand_id', $this->selectedBrand)
+            )
+            ->with(['category', 'brand'])
             ->orderBy('name')
             ->get();
     }
@@ -148,7 +159,7 @@ class PosCashier extends Page implements HasForms
     }
 
     /* ------------------------------------------------------------------ */
-    /* Pilih siswa                                                          */
+    /* Siswa                                                                */
     /* ------------------------------------------------------------------ */
 
     public function selectStudent(int $studentId): void
@@ -162,9 +173,7 @@ class PosCashier extends Page implements HasForms
         $this->selectedStudentBalance = (float) $student->balance;
         $this->searchStudent          = $student->name . ' — Kelas ' . $student->class;
         $this->showStudentDropdown    = false;
-
-        // Default ke dompet saat siswa dipilih
-        $this->paymentMethod = 'wallet';
+        $this->paymentMethod          = 'wallet';
     }
 
     public function clearStudent(): void
@@ -181,8 +190,6 @@ class PosCashier extends Page implements HasForms
     public function updatedSearchStudent(): void
     {
         $this->showStudentDropdown = strlen($this->searchStudent) >= 1;
-
-        // Jika field dikosongkan, reset siswa terpilih
         if (empty($this->searchStudent)) {
             $this->clearStudent();
         }
@@ -232,7 +239,8 @@ class PosCashier extends Page implements HasForms
             ]);
         }
 
-        Notification::make()->title('Ditambahkan')->success()->duration(800)->send();
+        $this->dispatch('product-added');
+        Notification::make()->title('Ditambahkan ke keranjang')->success()->duration(800)->send();
     }
 
     public function removeFromCart(int $index): void
@@ -292,7 +300,6 @@ class PosCashier extends Page implements HasForms
 
         $total = $this->cartTotal();
 
-        // ── Validasi per metode bayar ──────────────────────────────────
         if ($this->paymentMethod === 'wallet') {
             if (! $this->selectedStudentId) {
                 Notification::make()
@@ -303,7 +310,6 @@ class PosCashier extends Page implements HasForms
                 return;
             }
 
-            // Refresh saldo dari DB (hindari race condition)
             $student = Student::findOrFail($this->selectedStudentId);
             if (! $student->hasSufficientBalance($total)) {
                 Notification::make()
@@ -327,7 +333,6 @@ class PosCashier extends Page implements HasForms
             return;
         }
 
-        // ── Buat order ─────────────────────────────────────────────────
         $order = Order::create([
             'student_id'     => $this->selectedStudentId,
             'customer_name'  => $this->selectedStudentName,
@@ -341,7 +346,6 @@ class PosCashier extends Page implements HasForms
             'status'         => 'completed',
         ]);
 
-        // ── Buat order items & kurangi stok ────────────────────────────
         foreach ($this->cart as $item) {
             OrderItem::create([
                 'order_id'   => $order->id,
@@ -350,11 +354,8 @@ class PosCashier extends Page implements HasForms
                 'price'      => $item['price'],
                 'subtotal'   => $item['price'] * $item['quantity'],
             ]);
-
-            Product::find($item['product_id'])?->reduceStock($item['quantity']);
         }
 
-        // ── Potong saldo dompet siswa jika bayar via dompet ────────────
         $balanceAfter = null;
         if ($this->paymentMethod === 'wallet' && $this->selectedStudentId) {
             $student = Student::findOrFail($this->selectedStudentId);
@@ -366,19 +367,14 @@ class PosCashier extends Page implements HasForms
             $balanceAfter = $student->fresh()->balance;
         }
 
-        // ── Generate PDF struk ─────────────────────────────────────────
         $pdfPath = null;
         try {
             $receiptService = app(ReceiptService::class);
             $pdfPath        = $receiptService->generatePdf($order->load('items.product'));
-        } catch (\Throwable) {
-            // PDF gagal generate tidak menghentikan proses transaksi
-        }
+        } catch (\Throwable) {}
 
-        // ── Ambil setting toko untuk modal struk ───────────────────────
         $settings = Settings::current();
 
-        // ── Simpan data untuk modal struk ──────────────────────────────
         $this->lastOrder = [
             'id'             => $order->id,
             'invoice_number' => $order->invoice_number ?? "ORD-{$order->id}",
@@ -392,19 +388,33 @@ class PosCashier extends Page implements HasForms
             'created_at'     => $order->created_at->format('d/m/Y H:i'),
             'items'          => $this->cart->toArray(),
             'pdf_url'        => $pdfPath ? route('receipt.download', $order->id) : null,
-            // Data toko dari Settings (untuk modal & ESC/POS)
-            'store_name'     => $settings->receipt_store_name    ?: 'Kantin Sekolah',
-            'store_address'  => $settings->receipt_store_address ?: '',
-            'store_phone'    => $settings->receipt_store_phone   ?: '',
-            'store_footer'   => $settings->receipt_footer        ?: 'Terima kasih telah berbelanja!',
+            'cashier_name'   => Filament::auth()->user()?->name ?? 'Kasir',
+
+            'store_name'    => $settings->receipt_store_name    ?: 'Kantin Sekolah',
+            'store_address' => $settings->receipt_store_address ?: '',
+            'store_phone'   => $settings->receipt_store_phone   ?: '',
+            'store_footer'  => $settings->receipt_footer        ?: 'Terima kasih! Selamat belajar.',
+            'paper_size'    => $settings->receipt_paper_size    ?: '80mm',
+            'layout'        => $settings->receipt_layout        ?: 'standard',
+
+            'show_store_name'        => (bool) ($settings->receipt_show_store_name        ?? true),
+            'show_address'           => (bool) ($settings->receipt_show_address           ?? true),
+            'show_phone'             => (bool) ($settings->receipt_show_phone             ?? true),
+            'show_invoice_number'    => (bool) ($settings->receipt_show_invoice_number    ?? true),
+            'show_date'              => (bool) ($settings->receipt_show_date              ?? true),
+            'show_student'           => (bool) ($settings->receipt_show_student           ?? true),
+            'show_payment_method'    => (bool) ($settings->receipt_show_payment_method    ?? true),
+            'show_cashier'           => (bool) ($settings->receipt_show_cashier           ?? false),
+            'show_item_price'        => (bool) ($settings->receipt_show_item_price        ?? true),
+            'show_subtotal_per_item' => (bool) ($settings->receipt_show_subtotal_per_item ?? true),
+            'show_change'            => (bool) ($settings->receipt_show_change            ?? true),
+            'show_balance_after'     => (bool) ($settings->receipt_show_balance_after     ?? true),
+            'show_footer'            => (bool) ($settings->receipt_show_footer            ?? true),
+            'show_barcode'           => (bool) ($settings->receipt_show_barcode           ?? false),
         ];
 
-        // ── Reset state (cashAmount TIDAK di-reset di sini agar tidak ──
-        // ── mengganggu input — di-reset hanya setelah modal ditutup)  ──
         $this->cart             = collect();
         $this->showReceiptModal = true;
-
-        // Reset siswa agar siap untuk transaksi berikutnya
         $this->clearStudent();
 
         Notification::make()
@@ -413,10 +423,6 @@ class PosCashier extends Page implements HasForms
             ->success()
             ->send();
     }
-
-    /* ------------------------------------------------------------------ */
-    /* Modal & Print                                                        */
-    /* ------------------------------------------------------------------ */
 
     public function printReceipt(): void
     {
@@ -427,7 +433,6 @@ class PosCashier extends Page implements HasForms
     {
         $this->showReceiptModal = false;
         $this->lastOrder        = null;
-        // Reset cash di sini — setelah modal ditutup, aman di-reset
         $this->cashAmount       = 0;
     }
 
@@ -436,7 +441,33 @@ class PosCashier extends Page implements HasForms
         $this->cart       = collect();
         $this->cashAmount = 0;
         $this->clearStudent();
-
         Notification::make()->title('Keranjang dikosongkan')->send();
+    }
+
+    public bool $showCheckoutModal = false;
+
+    public function openCheckout(): void
+    {
+        if ($this->cart->isEmpty()) return;
+        $this->showCheckoutModal = true;
+    }
+
+    public function closeCheckoutModal(): void
+    {
+        $this->showCheckoutModal = false;
+    }
+
+    public function checkoutFromModal(string $method, float $cash): void
+    {
+        $this->paymentMethod = $method;
+        $this->cashAmount    = $cash;
+        $this->showCheckoutModal = false;
+        $this->checkout();
+    }
+
+    public function refreshProducts(): void
+    {
+        unset($this->products);
+        unset($this->categories);
     }
 }

@@ -36,6 +36,7 @@ class AppServiceProvider extends ServiceProvider
                 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
             BLADE),
         );
+        Blade::component('filament.layouts.pos', 'filament::layouts.pos');
 
     }
 
