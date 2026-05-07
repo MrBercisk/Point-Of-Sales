@@ -32,22 +32,8 @@ class PosCashier extends Page implements HasForms
     protected static ?int $navigationSort     = 2;
     protected string $view                    = 'filament.pages.pos-cashier';
 
-    
-    // ── Override layout → fullscreen tanpa sidebar/navbar ──
-    public function getLayout(): string
-    {
-       return 'filament.layouts.pos'; 
-    }
-    public function getLayoutData(): array
-    {
-        return [
-            'title' => 'POS Cashier',
-        ];
-    }
-
-    /* ------------------------------------------------------------------ */
-    /* State                                                                */
-    /* ------------------------------------------------------------------ */
+    // mode tamu
+    public bool $isGuestMode = false;
 
     public Collection $cart;
 
@@ -69,18 +55,30 @@ class PosCashier extends Page implements HasForms
     public bool   $showReceiptModal = false;
     public ?array $lastOrder        = null;
 
-    /* ------------------------------------------------------------------ */
-    /* Mount                                                                */
-    /* ------------------------------------------------------------------ */
+    
+    public bool $showCheckoutModal = false;
+
+
+    
+    // fullscreen tanpa sidebar/navbar
+    public function getLayout(): string
+    {
+       return 'filament.layouts.pos'; 
+    }
+    public function getLayoutData(): array
+    {
+        return [
+            'title' => 'POS Cashier',
+        ];
+    }
+
 
     public function mount(): void
     {
         $this->cart = collect();
     }
 
-    /* ------------------------------------------------------------------ */
-    /* Computed                                                             */
-    /* ------------------------------------------------------------------ */
+    /* computed */
 
     #[Computed]
     public function categories(): Collection
@@ -129,9 +127,8 @@ class PosCashier extends Page implements HasForms
             ->get();
     }
 
-    /* ------------------------------------------------------------------ */
-    /* Cart helpers                                                         */
-    /* ------------------------------------------------------------------ */
+
+    /* cart helper */
 
     public function cartTotal(): float
     {
@@ -158,9 +155,8 @@ class PosCashier extends Page implements HasForms
         return $this->selectedStudentBalance >= $this->cartTotal();
     }
 
-    /* ------------------------------------------------------------------ */
-    /* Siswa                                                                */
-    /* ------------------------------------------------------------------ */
+
+    /* siswa */
 
     public function selectStudent(int $studentId): void
     {
@@ -195,9 +191,7 @@ class PosCashier extends Page implements HasForms
         }
     }
 
-    /* ------------------------------------------------------------------ */
-    /* Kategori & Produk                                                    */
-    /* ------------------------------------------------------------------ */
+    /* kategori produk */
 
     public function selectCategory(?int $categoryId): void
     {
@@ -287,9 +281,8 @@ class PosCashier extends Page implements HasForms
         $this->updateQuantity($index, $newQty);
     }
 
-    /* ------------------------------------------------------------------ */
-    /* Checkout                                                             */
-    /* ------------------------------------------------------------------ */
+    
+    /* checkout */
 
     public function checkout(): void
     {
@@ -301,26 +294,29 @@ class PosCashier extends Page implements HasForms
         $total = $this->cartTotal();
 
         if ($this->paymentMethod === 'wallet') {
-            if (! $this->selectedStudentId) {
+            if ($this->isGuestMode) {
+                // tamu cuma pakai cash
+                $this->paymentMethod = 'cash';
+            } elseif (! $this->selectedStudentId) {
                 Notification::make()
                     ->title('Pilih siswa terlebih dahulu!')
                     ->body('Pembayaran dompet memerlukan data siswa.')
                     ->danger()
                     ->send();
                 return;
-            }
-
-            $student = Student::findOrFail($this->selectedStudentId);
-            if (! $student->hasSufficientBalance($total)) {
-                Notification::make()
-                    ->title('Saldo tidak cukup!')
-                    ->body(
-                        "Saldo {$student->name}: Rp " . number_format($student->balance, 0, ',', '.') .
-                        " | Total: Rp " . number_format($total, 0, ',', '.')
-                    )
-                    ->danger()
-                    ->send();
-                return;
+            } else {
+                $student = Student::findOrFail($this->selectedStudentId);
+                if (! $student->hasSufficientBalance($total)) {
+                    Notification::make()
+                        ->title('Saldo tidak cukup!')
+                        ->body(
+                            "Saldo {$student->name}: Rp " . number_format($student->balance, 0, ',', '.') .
+                            " | Total: Rp " . number_format($total, 0, ',', '.')
+                        )
+                        ->danger()
+                        ->send();
+                    return;
+                }
             }
         }
 
@@ -335,7 +331,7 @@ class PosCashier extends Page implements HasForms
 
         $order = Order::create([
             'student_id'     => $this->selectedStudentId,
-            'customer_name'  => $this->selectedStudentName,
+            'customer_name'  => $this->selectedStudentName ?? ($this->isGuestMode ? 'Tamu' : null),
             'customer_phone' => $this->selectedStudentId
                 ? Student::find($this->selectedStudentId)?->parent_phone
                 : null,
@@ -444,7 +440,6 @@ class PosCashier extends Page implements HasForms
         Notification::make()->title('Keranjang dikosongkan')->send();
     }
 
-    public bool $showCheckoutModal = false;
 
     public function openCheckout(): void
     {
@@ -467,7 +462,21 @@ class PosCashier extends Page implements HasForms
 
     public function refreshProducts(): void
     {
+        /* jangan refresh klo modalnya terbuka */
+        if ($this->showCheckoutModal || $this->showReceiptModal) return;
         unset($this->products);
         unset($this->categories);
+    }
+    
+    /* tamu */
+    public function setGuestMode(bool $guest): void
+    {
+        $this->isGuestMode = $guest;
+        if ($guest) {
+            $this->clearStudent();
+            $this->paymentMethod = 'cash'; // tamu hanya bisa tunai
+        }else{
+            $this->paymentMethod = 'wallet'; // default ke dompet kalau bukan tamu
+        }
     }
 }
