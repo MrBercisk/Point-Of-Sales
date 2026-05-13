@@ -52,7 +52,8 @@ class SettingsTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->actions([
-                EditAction::make(),
+                EditAction::make()
+                ->authorize(fn () => request()->user()?->can('settings.edit')),
             ]);
     }
 }

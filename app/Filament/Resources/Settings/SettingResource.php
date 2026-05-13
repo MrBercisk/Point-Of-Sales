@@ -13,9 +13,14 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use UnitEnum;
+// permission filament
+use App\Filament\Traits\HasFilamentPermission;
+
 
 class SettingResource extends Resource
 {
+     use HasFilamentPermission;
+    protected static string $permissionPrefix = 'settings';
     protected static ?string $model = Settings::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCog6Tooth;

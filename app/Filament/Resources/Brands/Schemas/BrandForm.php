@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\BrandResource\Schemas;
+namespace App\Filament\Resources\Brands\Schemas;
 
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\TextInput;

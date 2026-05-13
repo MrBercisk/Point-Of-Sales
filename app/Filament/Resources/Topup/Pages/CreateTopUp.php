@@ -25,7 +25,6 @@ class CreateTopUp extends CreateRecord
     {
         $student = Student::findOrFail($data['student_id']);
 
-        // topUp() di model Student sudah handle:
         // - increment balance
         // - catat wallet_transaction (type, amount, balance_before, balance_after)
         return $student->topUp(
@@ -35,13 +34,9 @@ class CreateTopUp extends CreateRecord
         );
     }
 
-    /**
-     * Mutate data sebelum create — buang field helper (_current_balance, dll)
-     * agar tidak ikut masuk ke handleRecordCreation dengan data kotor
-     */
+
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        // Buang field placeholder yang hanya untuk UI
         unset($data['_current_balance'], $data['_balance_after_preview']);
 
         return $data;

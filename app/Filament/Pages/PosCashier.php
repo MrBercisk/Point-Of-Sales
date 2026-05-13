@@ -21,9 +21,14 @@ use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Cache;
 use UnitEnum;
 
+// permission filament
+use App\Filament\Traits\HasFilamentPermission;
+
 class PosCashier extends Page implements HasForms
 {
     use InteractsWithForms;
+    use HasFilamentPermission;
+    protected static string $permissionPrefix = 'pos-cashier';
 
     protected static string|BackedEnum|null $navigationIcon  = Heroicon::ComputerDesktop;
     protected static ?string $navigationLabel = 'POS Cashier';
@@ -61,6 +66,20 @@ class PosCashier extends Page implements HasForms
 
     protected bool $lazyLoad = false;
 
+    public static function canAccess(): bool
+    {
+        $user = request()->user();
+
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->hasRole('super_admin')) {
+            return true;
+        }
+
+        return $user->can('pos-cashier.view');
+    }
 
     
     // fullscreen tanpa sidebar/navbar
@@ -282,6 +301,10 @@ class PosCashier extends Page implements HasForms
 
     public function checkout(): void
     {
+        abort_unless(
+            request()->user()?->can('pos-cashier.view'),
+            403
+        );
         if ($this->cart->isEmpty()) {
             Notification::make()->title('Keranjang kosong!')->danger()->send();
             return;

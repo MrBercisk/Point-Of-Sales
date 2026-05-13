@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\UnitResource\Schemas;
+namespace App\Filament\Resources\Units\Tables;
 
 use Filament\Actions\BulkActionGroup as ActionsBulkActionGroup;
 use Filament\Actions\DeleteBulkAction as ActionsDeleteBulkAction;
@@ -40,11 +40,13 @@ class UnitsTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->actions([
-                ActionsEditAction::make(),
+                ActionsEditAction::make()
+                 ->authorize(fn () => request()->user()?->can('units.edit')),
             ])
             ->bulkActions([
                 ActionsBulkActionGroup::make([
-                    ActionsDeleteBulkAction::make(),
+                    ActionsDeleteBulkAction::make()
+                     ->authorize(fn () => request()->user()?->can('units.delete')),
                 ]),
             ]);
     }

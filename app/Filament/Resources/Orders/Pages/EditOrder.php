@@ -14,8 +14,10 @@ class EditOrder extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            ViewAction::make(),
-            DeleteAction::make(),
+            ViewAction::make()
+            ->authorize(fn () => request()->user()?->can('orders.view')),
+            DeleteAction::make()
+            ->authorize(fn () => request()->user()?->can('orders.delete')),
         ];
     }
 }

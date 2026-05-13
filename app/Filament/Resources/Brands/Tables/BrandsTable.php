@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\BrandResource\Schemas;
+namespace App\Filament\Resources\Brands\Tables;
 
 use Filament\Actions\BulkActionGroup as ActionsBulkActionGroup;
 use Filament\Actions\DeleteBulkAction as ActionsDeleteBulkAction;
@@ -50,11 +50,13 @@ class BrandsTable
                 TernaryFilter::make('is_active')->label('Active'),
             ])
             ->actions([
-                ActionsEditAction::make(),
+                ActionsEditAction::make()
+                 ->authorize(fn () => request()->user()?->can('brands.edit')),
             ])
             ->bulkActions([
                 ActionsBulkActionGroup::make([
-                    ActionsDeleteBulkAction::make(),
+                    ActionsDeleteBulkAction::make()
+                     ->authorize(fn () => request()->user()?->can('brands.delete')),
                 ]),
             ]);
     }

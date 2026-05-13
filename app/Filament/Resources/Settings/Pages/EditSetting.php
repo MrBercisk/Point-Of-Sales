@@ -25,7 +25,8 @@ class EditSetting extends EditRecord
                         ->title(__('app.cache_cleared'))
                         ->success()
                         ->send();
-                }),
+                })
+                ->authorize(fn () => request()->user()?->can('settings.view')),
         ];
     }
 

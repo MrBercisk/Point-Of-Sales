@@ -9,9 +9,13 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+// permission filament
+use App\Filament\Traits\HasFilamentPermission;
 
 class WalletTransactionResource extends Resource
 {
+    use HasFilamentPermission;
+    protected static string $permissionPrefix = 'wallet-transactions';
     protected static ?string $model = WalletTransaction::class;
 
     protected static string|\BackedEnum|null $navigationIcon  = Heroicon::ClipboardDocumentList;

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\Students\Schemas;
+namespace App\Filament\Resources\Students\Tables;
 
 use App\Models\Product;
 use App\Models\Student;
@@ -120,12 +120,15 @@ class StudentTable
                 //     })
                 //     ->successNotificationTitle('Saldo berhasil ditambahkan'),
 
-                ActionsViewAction::make(),
-                ActionsEditAction::make(),
+                ActionsViewAction::make()
+                ->authorize(fn () => request()->user()?->can('students.views')),
+                ActionsEditAction::make()
+                ->authorize(fn () => request()->user()?->can('students.edit')),
             ])
             ->bulkActions([
                 ActionsBulkActionGroup::make([
-                    ActionsDeleteBulkAction::make(),
+                    ActionsDeleteBulkAction::make()
+                    ->authorize(fn () => request()->user()?->can('students.delete')),
                 ]),
             ]);
     }

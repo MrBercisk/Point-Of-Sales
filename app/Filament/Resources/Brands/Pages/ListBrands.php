@@ -14,7 +14,8 @@ class ListBrands extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            CreateAction::make(),
+            CreateAction::make()
+            ->authorize(fn () => request()->user()?->can('brands.create')),
         ];
     }
 }

@@ -475,15 +475,32 @@
         </div>
 
         {{-- ── Tombol Simpan ── --}}
-        <button class="rs-save-btn" wire:click="save" wire:loading.attr="disabled" wire:target="save">
+      @can('receipt-settings.edit')
+        <button class="rs-save-btn"
+                wire:click="save"
+                wire:loading.attr="disabled"
+                wire:target="save">
+
             <span wire:loading.remove wire:target="save">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:18px;height:18px;display:inline;vertical-align:middle;margin-right:4px">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/>
+                <svg xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                    stroke="currentColor"
+                    style="width:18px;height:18px;display:inline;vertical-align:middle;margin-right:4px">
+                    <path stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M4.5 12.75l6 6 9-13.5"/>
                 </svg>
+
                 Simpan Pengaturan
             </span>
-            <span wire:loading wire:target="save">Menyimpan...</span>
+
+            <span wire:loading wire:target="save">
+                Menyimpan...
+            </span>
         </button>
+    @endcan
 
     </div>
 

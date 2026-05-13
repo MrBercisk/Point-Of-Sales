@@ -116,9 +116,11 @@ class OrdersTable
             ])
             ->recordActions([
                 ActionGroup::make([
-                    ViewAction::make(),
+                    ViewAction::make()
+                    ->authorize(fn () => request()->user()?->can('orders.view')),
                     EditAction::make()
-                        ->visible(fn (Order $record) => $record->status === 'pending'),
+                        ->visible(fn (Order $record) => $record->status === 'pending')
+                        ->authorize(fn () => request()->user()?->can('orders.edit')),
 
                     Action::make('complete')
                         ->label('Mark Complete')
@@ -135,7 +137,8 @@ class OrdersTable
                                 ->body("Order {$record->invoice_number} has been completed.")
                                 ->success()
                                 ->send();
-                        }),
+                        })
+                        ->authorize(fn () => request()->user()?->can('orders.edit')),
 
                     Action::make('cancel')
                         ->label('Cancel Order')
@@ -152,7 +155,8 @@ class OrdersTable
                                 ->body("Order {$record->invoice_number} has been cancelled. Stock restored.")
                                 ->warning()
                                 ->send();
-                        }),
+                        })
+                         ->authorize(fn () => request()->user()?->can('orders.edit')),
 
                     Action::make('print')
                         ->label('Print Invoice')
@@ -160,10 +164,12 @@ class OrdersTable
                         ->color('gray')
                         ->url(fn (Order $record) => route('invoice.print', $record))
                         ->openUrlInNewTab()
-                        ->visible(false),
+                        ->visible(false)
+                         ->authorize(fn () => request()->user()?->can('orders.view')),
 
                     DeleteAction::make()
-                        ->visible(fn (Order $record) => $record->status === 'cancelled'),
+                        ->visible(fn (Order $record) => $record->status === 'cancelled')
+                        ->authorize(fn () => request()->user()?->can('orders.delete')),
                 ]),
             ])
             ->toolbarActions([

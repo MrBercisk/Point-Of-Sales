@@ -19,10 +19,16 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Maatwebsite\Excel\Facades\Excel;
 
+// permission filament
+use App\Filament\Traits\HasFilamentPermission;
+
+
 class SalesReport extends Page implements HasForms, HasTable
 {
     use InteractsWithForms;
     use InteractsWithTable;
+    use HasFilamentPermission;
+    protected static string $permissionPrefix = 'sales-report';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::DocumentChartBar;
 
@@ -36,6 +42,20 @@ class SalesReport extends Page implements HasForms, HasTable
 
     public ?string $dateTo = null;
 
+    public static function canAccess(): bool
+    {
+        $user = request()->user();
+
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->hasRole('super_admin')) {
+            return true;
+        }
+
+        return $user->can('sales-report.view');
+    }
     public static function getNavigationGroup(): ?string
     {
         return 'Reports';
@@ -113,6 +133,10 @@ class SalesReport extends Page implements HasForms, HasTable
 
     public function export(): \Symfony\Component\HttpFoundation\BinaryFileResponse
     {
+        abort_unless(
+            request()->user()?->can('sales-report.view'),
+            403
+        );
         $filename = 'sales-report-' . now()->format('Y-m-d') . '.xlsx';
 
         return Excel::download(

@@ -17,8 +17,14 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use UnitEnum;
 
+// permission filament
+use App\Filament\Traits\HasFilamentPermission;
+
+
 class OrderResource extends Resource
 {
+     use HasFilamentPermission;
+    protected static string $permissionPrefix = 'orders';
     protected static ?string $model = Order::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;

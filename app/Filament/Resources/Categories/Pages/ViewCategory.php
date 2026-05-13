@@ -13,7 +13,8 @@ class ViewCategory extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            EditAction::make(),
+            EditAction::make()
+            ->authorize(fn () => request()->user()?->can('categories.edit')),
         ];
     }
 }

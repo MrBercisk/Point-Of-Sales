@@ -9,18 +9,20 @@ use BackedEnum;
 use Filament\Support\Icons\Heroicon;
 use UnitEnum;
 
+// permission filament
+use App\Filament\Traits\HasFilamentPermission;
+
+
 class ReceiptSettings extends Page
 {
+    use HasFilamentPermission;
+    protected static string $permissionPrefix = 'receipt-settings';
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedReceiptPercent;
     protected static ?string $navigationLabel = 'Receipt Settings';
     protected static ?string $title           = 'Pengaturan Struk Kasir';
     protected static string|UnitEnum|null $navigationGroup = 'Settings';
     protected static ?int $navigationSort     = 10;
     protected string $view = 'filament.pages.receipt-settings';
-
-    /* ------------------------------------------------------------------ */
-    /* State — mirror kolom di tabel settings                               */
-    /* ------------------------------------------------------------------ */
 
     // Info toko
     public string $receipt_store_name    = '';
@@ -49,12 +51,27 @@ class ReceiptSettings extends Page
     public bool $receipt_show_footer            = true;
     public bool $receipt_show_barcode           = false;
 
-    /* ------------------------------------------------------------------ */
-    /* Mount — load dari DB                                                 */
-    /* ------------------------------------------------------------------ */
+    public static function canAccess(): bool
+    {
+        $user = request()->user();
+
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->hasRole('super_admin')) {
+            return true;
+        }
+
+        return $user->can('receipt-settings.view');
+    }
 
     public function mount(): void
     {
+        abort_unless(
+            request()->user()?->can('receipt-settings.view'),
+            403
+        );
         $s = Settings::current();
 
         $fields = [
@@ -74,12 +91,12 @@ class ReceiptSettings extends Page
         }
     }
 
-    /* ------------------------------------------------------------------ */
-    /* Save                                                                 */
-    /* ------------------------------------------------------------------ */
-
     public function save(): void
     {
+        abort_unless(
+            request()->user()?->can('receipt-settings.edit'),
+            403
+        );
         $settings = Settings::first();
 
         if (! $settings) {
@@ -119,10 +136,7 @@ class ReceiptSettings extends Page
             ->send();
     }
 
-    /* ------------------------------------------------------------------ */
-    /* Preview data dummy untuk render live preview                        */
-    /* ------------------------------------------------------------------ */
-
+    /* buat dummy privew di struk */
     public function getPreviewData(): array
     {
         return [

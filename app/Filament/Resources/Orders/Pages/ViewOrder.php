@@ -14,7 +14,8 @@ class ViewOrder extends ViewRecord
     {
         return [
             EditAction::make()
-                ->visible(fn () => $this->record->status === 'pending'),
+                ->visible(fn () => $this->record->status === 'pending')
+                ->authorize(fn () => request()->user()?->can('orders.edit')),
         ];
     }
 }

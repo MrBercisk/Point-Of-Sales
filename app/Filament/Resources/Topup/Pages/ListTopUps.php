@@ -16,7 +16,8 @@ class ListTopUps extends ListRecords
         return [
             CreateAction::make()
                 ->label('Tambah Top Up')
-                ->icon('heroicon-o-plus'),
+                ->icon('heroicon-o-plus')
+                ->authorize(fn () => request()->user()?->can('topups.create')),
         ];
     }
 

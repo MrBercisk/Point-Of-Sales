@@ -8,7 +8,7 @@ use App\Filament\Resources\Students\Pages\EditStudent;
 use App\Filament\Resources\Students\Pages\ListStudents;
 use App\Filament\Resources\Students\Pages\ViewStudent;
 use App\Filament\Resources\Students\Schemas\StudentForm;
-use App\Filament\Resources\Students\Schemas\StudentTable;
+use App\Filament\Resources\Students\Tables\StudentTable;
 
 use App\Models\Student;
 use BackedEnum;
@@ -18,8 +18,14 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use UnitEnum;
 
+// permission filament
+use App\Filament\Traits\HasFilamentPermission;
+
+
 class StudentResource extends Resource
 {
+    use HasFilamentPermission;
+    protected static string $permissionPrefix = 'students';
     protected static ?string $model = Student::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::AcademicCap;

@@ -107,8 +107,10 @@ class ProductsTable
             ])
             ->recordActions([
                 ActionGroup::make([
-                    ViewAction::make(),
-                    EditAction::make(),
+                    ViewAction::make()
+                    ->authorize(fn () => request()->user()?->can('products.view')),
+                    EditAction::make()
+                    ->authorize(fn () => request()->user()?->can('products.edit')),
                     Action::make('adjustStock')
                         ->label(__('app.adjust_stock'))
                         ->icon('heroicon-o-archive-box-arrow-down')
@@ -136,23 +138,28 @@ class ProductsTable
                                 'subtract' => $record->decrement('stock', $quantity),
                                 'set' => $record->update(['stock' => $quantity]),
                             };
-                        }),
-                    DeleteAction::make(),
+                        })
+                        ->authorize(fn () => request()->user()?->can('products.edit')),
+                    DeleteAction::make()
+                    ->authorize(fn () => request()->user()?->can('products.delete')),
                 ]),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                    ->authorize(fn () => request()->user()?->can('products.delete')),
                     BulkAction::make('activate')
                         ->label(__('app.activate'))
                         ->icon('heroicon-o-check')
                         ->color('success')
-                        ->action(fn ($records) => $records->each->update(['is_active' => true])),
+                        ->action(fn ($records) => $records->each->update(['is_active' => true]))
+                        ->authorize(fn () => request()->user()?->can('products.edit')),
                     BulkAction::make('deactivate')
                         ->label(__('app.deactivate'))
                         ->icon('heroicon-o-x-mark')
                         ->color('danger')
-                        ->action(fn ($records) => $records->each->update(['is_active' => false])),
+                        ->action(fn ($records) => $records->each->update(['is_active' => false]))
+                        ->authorize(fn () => request()->user()?->can('products.edit')),
                 ]),
             ])
             ->defaultSort('name', 'asc')

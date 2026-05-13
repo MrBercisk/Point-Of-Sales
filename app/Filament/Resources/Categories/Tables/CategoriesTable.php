@@ -65,18 +65,22 @@ class CategoriesTable
                     ->native(false),
             ])
             ->recordActions([
-                ViewAction::make(),
-                EditAction::make(),
+                ViewAction::make()
+                ->authorize(fn () => request()->user()?->can('categories.view')),
+                EditAction::make()
+                ->authorize(fn () => request()->user()?->can('categories.edit')),
                 DeleteAction::make()
                     ->before(function (Category $record) {
                         if ($record->products()->count() > 0) {
                             throw new \Exception('Cannot delete category with products');
                         }
-                    }),
+                    })
+                    ->authorize(fn () => request()->user()?->can('categories.delete')),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                    ->authorize(fn () => request()->user()?->can('categories.delete')),
                 ]),
             ])
             ->defaultSort('name', 'asc')

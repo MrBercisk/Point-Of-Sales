@@ -16,11 +16,8 @@ class SettingForm
     {
         return $schema
 
-            // ── General ──────────────────────────────────────────────────────
-           ->columns(3)  // ← tambahkan ini
+           ->columns(3) 
             ->components([
-
-            // ── General ──────────────────────────────────────────────────────
             Section::make(__('app.general'))
                 ->description(__('app.general_information'))
                 ->schema([
@@ -104,7 +101,8 @@ class SettingForm
                 ->columns(3)
                 ->columnSpan(2),  // General = 2/3 lebar
 
-            // ── Invoice ───────────────────────────────────────────────────────
+      
+                /*  invoice*/
             Section::make('Invoice')
                 ->description(__('app.invoice_footer_setting'))
                 ->schema([
@@ -123,7 +121,7 @@ class SettingForm
                 ->columns(1)
                 ->columnSpan(1),  // Invoice = 1/3 lebar
 
-            // ── POS & Struk ───────────────────────────────────────────────────
+        /* pos struk */
             Section::make('POS & Struk')
                 ->description(__('app.information_struk_helper'))
                 ->schema([
@@ -152,7 +150,7 @@ class SettingForm
                 ->columns(3)
                 ->columnSpan('full'),  // ← full width
 
-            // ── WhatsApp ──────────────────────────────────────────────────────
+        /* wa */
             Section::make('WhatsApp (Fonnte)')
                 ->description(__('app.whatsapp_desc'))
                 ->schema([

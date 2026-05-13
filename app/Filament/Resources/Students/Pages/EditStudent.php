@@ -12,6 +12,8 @@ class EditStudent extends EditRecord
 
     protected function getHeaderActions(): array
     {
-        return [DeleteAction::make()];
+        return [DeleteAction::make()
+        ->authorize(fn () => request()->user()?->can('students.delete')),
+        ];
     }
 }

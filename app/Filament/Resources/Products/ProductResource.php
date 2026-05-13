@@ -16,9 +16,14 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use UnitEnum;
+// permission filament
+use App\Filament\Traits\HasFilamentPermission;
+
 
 class ProductResource extends Resource
 {
+    use HasFilamentPermission;
+    protected static string $permissionPrefix = 'products';
     protected static ?string $model = Product::class;
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCube;
     protected static ?int $navigationSort = 1;

@@ -12,6 +12,8 @@ class ListStudents extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [CreateAction::make()];
+        return [CreateAction::make()
+        ->authorize(fn () => request()->user()?->can('students.create')),
+        ];
     }
 }

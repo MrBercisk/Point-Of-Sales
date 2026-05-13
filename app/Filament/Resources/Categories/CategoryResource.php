@@ -16,8 +16,13 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use UnitEnum;
 
+// permission filament
+use App\Filament\Traits\HasFilamentPermission;
 class CategoryResource extends Resource
 {
+
+    use HasFilamentPermission;
+    protected static string $permissionPrefix = 'categories';
     protected static ?string $model = Category::class;
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTag;
     protected static string|UnitEnum|null $navigationGroup = 'Products';
