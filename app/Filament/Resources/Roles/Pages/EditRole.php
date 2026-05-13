@@ -10,7 +10,7 @@ class EditRole extends EditRecord
     protected static string $resource = RoleResource::class;
     protected array $permissionsToSync = [];
 
-    // Saat form di-load, pecah permissions ke field masing-masing group
+    // form di-load, pecah permissions ke field masing-masing group
     protected function mutateFormDataBeforeFill(array $data): array
     {
         $allPermissions = $this->record->permissions->pluck('name')->toArray();
@@ -29,7 +29,7 @@ class EditRole extends EditRecord
         return $data;
     }
 
-    // Saat save, gabungkan kembali semua permissions_* lalu sync
+    // Saat save gabungkan kembali semua permissions_* lalu sync
     protected function mutateFormDataBeforeSave(array $data): array
     {
         $this->permissionsToSync = [];

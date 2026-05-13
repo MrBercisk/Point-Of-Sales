@@ -52,9 +52,6 @@ class Product extends Model
         'not_for_selling'=> 'boolean',
     ];
 
-    /* ------------------------------------------------------------------ */
-    /* Boot                                                                 */
-    /* ------------------------------------------------------------------ */
 
     protected static function boot(): void
     {
@@ -67,9 +64,6 @@ class Product extends Model
         });
     }
 
-    /* ------------------------------------------------------------------ */
-    /* Relasi                                                               */
-    /* ------------------------------------------------------------------ */
 
     /** Produk milik satu kategori */
     public function category(): BelongsTo
@@ -107,10 +101,6 @@ class Product extends Model
         return $this->hasMany(OrderItem::class);
     }
 
-    /* ------------------------------------------------------------------ */
-    /* Helper Methods                                                       */
-    /* ------------------------------------------------------------------ */
-
     /** Cek apakah produk masih ada stok */
     public function inStock(): bool
     {
@@ -134,10 +124,6 @@ class Product extends Model
     {
         $this->increment('stock', $quantity);
     }
-
-    /* ------------------------------------------------------------------ */
-    /* Accessors                                                            */
-    /* ------------------------------------------------------------------ */
 
     /** Harga jual dalam format Rupiah */
     public function getFormattedPriceAttribute(): string
@@ -166,9 +152,7 @@ class Product extends Model
         return $this->price;
     }
 
-    /* ------------------------------------------------------------------ */
-    /* Scopes                                                               */
-    /* ------------------------------------------------------------------ */
+ 
 
     /** Hanya produk aktif */
     public function scopeActive(Builder $query): Builder
@@ -195,7 +179,7 @@ class Product extends Model
     }
 
     /** Filter berdasarkan tipe produk */
-    public function scopeOfType($query, string $type)
+   public function scopeOfType(Builder $query, string $type): Builder
     {
         return $query->where('type', $type);
     }

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Builder;
 
 class WalletTransaction extends Model
 {
@@ -62,17 +63,17 @@ class WalletTransaction extends Model
     /* Scopes                                                               */
     /* ------------------------------------------------------------------ */
 
-    public function scopeTopUps($query)
+    public function scopeTopUps(Builder $query): Builder
     {
         return $query->where('type', 'top_up');
     }
 
-    public function scopePurchases($query)
+    public function scopePurchases(Builder $query): Builder
     {
         return $query->where('type', 'purchase');
     }
 
-    public function scopeToday($query)
+    public function scopeToday(Builder $query): Builder
     {
         return $query->whereDate('created_at', today());
     }

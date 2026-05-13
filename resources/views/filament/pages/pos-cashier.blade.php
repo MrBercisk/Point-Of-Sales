@@ -12,7 +12,7 @@
         <div class="tb-divider"></div>
         <div class="tb-register">
             <span class="tb-dot"></span>
-            Kasir 1 &middot; Online
+            {{ auth()->user()?->name ?? 'Kasir 1' }} &middot; Online
         </div>
     </div>
     <div class="tb-right">

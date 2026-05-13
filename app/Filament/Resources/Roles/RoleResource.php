@@ -51,7 +51,6 @@ class RoleResource extends Resource
         return 'Role & Permission';
     }
 
-    // ── Schema ────────────────────────────────────────────────────────
 
     public static function form(Schema $schema): Schema
     {
