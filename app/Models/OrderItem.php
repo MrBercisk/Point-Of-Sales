@@ -1,13 +1,13 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class OrderItem extends Model
 {
-     protected $fillable = [
+    protected $fillable = [
         'order_id',
         'product_id',
         'quantity',
@@ -16,13 +16,12 @@ class OrderItem extends Model
     ];
 
     protected $casts = [
-        'price' => 'decimal:2',
+        'price'    => 'decimal:2',
         'subtotal' => 'decimal:2',
     ];
 
-
     /* boot method buat auto calculate dan stock reduction */
-     protected static function boot()
+    protected static function boot()
     {
         parent::boot();
 
@@ -55,6 +54,14 @@ class OrderItem extends Model
             if ($item->product && $item->order->status !== 'cancelled') {
                 $item->product->increaseStock($item->quantity);
             }
+
+            // Restore stock bahan tambahan (telur, keju, dll)
+            foreach ($item->modifiers as $orderItemModifier) {
+                $modifier = $orderItemModifier->modifier;
+                if ($modifier?->product_id && $modifier->product) {
+                    $modifier->product->increaseStock(1);
+                }
+            }
         });
 
         static::deleted(function ($item) {
@@ -71,9 +78,30 @@ class OrderItem extends Model
     }
 
     /* relasi orderitem ke Product */
-     public function product(): BelongsTo
+    public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    /* relasi orderitem ke modifier tambahan */
+    public function modifiers(): HasMany
+    {
+        return $this->hasMany(OrderItemModifier::class);
+    }
+
+    /* hitung total harga modifier yang dipilih */
+    public function getModifiersTotalAttribute(): float
+    {
+        return $this->modifiers->sum('price_snapshot');
+    }
+
+    /* recalculate subtotal termasuk modifier setelah modifier disimpan */
+    public function recalculateSubtotal(): void
+    {
+        $modifiersTotal = $this->modifiers->sum('price_snapshot');
+        $this->subtotal = ($this->price + $modifiersTotal) * $this->quantity;
+        $this->saveQuietly(); // saveQuietly supaya tidak trigger boot saved lagi
+        $this->order->calculateTotal();
     }
 
     /* get format subtotal rupiah */

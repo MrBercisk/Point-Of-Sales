@@ -182,7 +182,142 @@
     </div>
 </div>
 @endif
+{{-- ══ MODAL PILIHAN TAMBAHAN ══════════════════════════════════════ --}}
+@if($showModifierModal && $pendingProductId)
+@php
+    $pendingProduct = \App\Models\Product::find($pendingProductId);
+@endphp
+<div class="modal-overlay" style="z-index:9999">
+    <div class="modal-box" style="max-width:460px;width:100%">
 
+        {{-- Head --}}
+        <div class="modal-head">
+            <div class="mh-left">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:18px;height:18px"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span>Pilihan Tambahan</span>
+            </div>
+            <button class="mh-close" wire:click="closeModifierModal">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <div class="modal-body" style="padding:16px 20px">
+
+            {{-- Info produk --}}
+            <div style="display:flex;align-items:center;gap:12px;padding:12px;background:#f9fafb;border-radius:10px;margin-bottom:16px;border:1px solid #f3f4f6">
+                @if($pendingProduct?->image)
+                    <img src="{{ Storage::url($pendingProduct->image) }}" style="width:44px;height:44px;border-radius:8px;object-fit:cover">
+                @else
+                    <div style="width:44px;height:44px;border-radius:8px;background:#e5e7eb;display:flex;align-items:center;justify-content:center;font-size:20px">🍽</div>
+                @endif
+                <div>
+                    <div style="font-size:14px;font-weight:600;color:#111827">{{ $pendingProduct?->name }}</div>
+                    <div style="font-size:12px;color:#6b7280">Rp {{ number_format($pendingProduct?->price ?? 0, 0, ',', '.') }}</div>
+                </div>
+            </div>
+
+            {{-- Modifier groups --}}
+            @foreach($pendingModifierGroups as $group)
+            <div style="margin-bottom:16px">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                    <div style="font-size:13px;font-weight:600;color:#374151">
+                        {{ $group['name'] }}
+                        @if($group['is_required'])
+                            <span style="font-size:10px;background:#fee2e2;color:#dc2626;padding:2px 7px;border-radius:99px;margin-left:6px">Wajib</span>
+                        @else
+                            <span style="font-size:10px;background:#f3f4f6;color:#9ca3af;padding:2px 7px;border-radius:99px;margin-left:6px">Opsional</span>
+                        @endif
+                    </div>
+                    <div style="font-size:11px;color:#9ca3af">Maks. {{ $group['max_select'] }} pilihan</div>
+                </div>
+
+                <div style="display:flex;flex-direction:column;gap:6px">
+                    @foreach($group['modifiers'] as $modifier)
+                    @php
+                        $isSelected = in_array($modifier['id'], $selectedModifiers);
+                        $isOutOfStock = isset($modifier['product_id']) && $modifier['product_id']
+                            ? (\App\Models\Product::find($modifier['product_id'])?->stock ?? 0) <= 0
+                            : false;
+                    @endphp
+                    <button
+                        wire:click="toggleModifier({{ $modifier['id'] }}, {{ $group['id'] }}, {{ $group['max_select'] }})"
+                        @disabled($isOutOfStock)
+                        style="
+                            display:flex;align-items:center;justify-content:space-between;
+                            padding:10px 14px;border-radius:10px;text-align:left;
+                            border:1.5px solid {{ $isSelected ? '#16a34a' : '#e5e7eb' }};
+                            background:{{ $isSelected ? '#f0fdf4' : '#fff' }};
+                            cursor:{{ $isOutOfStock ? 'not-allowed' : 'pointer' }};
+                            opacity:{{ $isOutOfStock ? '0.5' : '1' }};
+                            transition:all .15s;width:100%
+                        "
+                    >
+                        <div style="display:flex;align-items:center;gap:10px">
+                            <div style="
+                                width:20px;height:20px;border-radius:{{ $group['max_select'] === 1 ? '50%' : '5px' }};
+                                border:2px solid {{ $isSelected ? '#16a34a' : '#d1d5db' }};
+                                background:{{ $isSelected ? '#16a34a' : 'transparent' }};
+                                display:flex;align-items:center;justify-content:center;
+                                flex-shrink:0
+                            ">
+                                @if($isSelected)
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="white" style="width:12px;height:12px"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+                                @endif
+                            </div>
+                            <div>
+                                <div style="font-size:13px;font-weight:500;color:#111827">{{ $modifier['name'] }}</div>
+                                @if($isOutOfStock)
+                                    <div style="font-size:11px;color:#ef4444">Stok habis</div>
+                                @endif
+                            </div>
+                        </div>
+                        <div style="font-size:13px;font-weight:600;color:{{ $modifier['price'] > 0 ? '#16a34a' : '#9ca3af' }}">
+                            {{ $modifier['price'] > 0 ? '+Rp ' . number_format($modifier['price'], 0, ',', '.') : 'Gratis' }}
+                        </div>
+                    </button>
+                    @endforeach
+                </div>
+            </div>
+            @endforeach
+
+            {{-- Total tambahan --}}
+            @php
+                $modifierTotal = collect($pendingModifierGroups)
+                    ->flatMap(fn($g) => $g['modifiers'])
+                    ->filter(fn($m) => in_array($m['id'], $selectedModifiers))
+                    ->sum('price');
+            @endphp
+            <div style="border-top:1px solid #f3f4f6;padding-top:12px;margin-top:4px">
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+                    <span style="font-size:12px;color:#6b7280">Harga produk</span>
+                    <span style="font-size:12px;color:#374151">Rp {{ number_format($pendingProduct?->price ?? 0, 0, ',', '.') }}</span>
+                </div>
+                @if($modifierTotal > 0)
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+                    <span style="font-size:12px;color:#6b7280">Pilihan tambahan</span>
+                    <span style="font-size:12px;color:#16a34a">+Rp {{ number_format($modifierTotal, 0, ',', '.') }}</span>
+                </div>
+                @endif
+                <div style="display:flex;justify-content:space-between;margin-top:6px;padding-top:6px;border-top:1px dashed #e5e7eb">
+                    <span style="font-size:14px;font-weight:600;color:#111827">Total</span>
+                    <span style="font-size:14px;font-weight:700;color:#16a34a">Rp {{ number_format(($pendingProduct?->price ?? 0) + $modifierTotal, 0, ',', '.') }}</span>
+                </div>
+            </div>
+        </div>
+
+        {{-- Footer --}}
+        <div class="modal-actions">
+            <button class="modal-act-btn" wire:click="closeModifierModal" style="background:#f3f4f6;color:#374151">
+                Batal
+            </button>
+            <button class="modal-act-btn btn-print" wire:click="confirmModifiers" style="flex:1;justify-content:center">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:16px;height:16px"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                Tambah ke Keranjang
+            </button>
+        </div>
+    </div>
+</div>
+@endif
 {{-- ══ MAIN POS ══════════════════════════════════════════════════════ --}}
 <div class="pos-wrap" @close-checkout.window="$wire.closeCheckoutModal()">
 
@@ -411,7 +546,19 @@
                 </div>
                 <div class="ci-info">
                     <div class="ci-name">{{ $item['name'] }}</div>
-                    <div class="ci-unit">Rp {{ number_format($item['price'], 0, ',', '.') }} / pcs</div>
+
+                    {{-- tampilkan modifier yang dipilih --}}
+                    @if(!empty($item['modifiers']))
+                    <div style="margin-top:2px">
+                        @foreach($item['modifiers'] as $mod)
+                        <span style="font-size:10px;background:#f0fdf4;color:#16a34a;padding:1px 7px;border-radius:99px;margin-right:3px;display:inline-block;margin-top:2px">
+                            +{{ $mod['name'] }}
+                        </span>
+                        @endforeach
+                    </div>
+                    @endif
+
+                    <div class="ci-unit">Rp {{ number_format($item['base_price'] ?? $item['price'], 0, ',', '.') }} / pcs</div>
                 </div>
                 <div class="ci-right">
                     <div class="ci-qty-row">

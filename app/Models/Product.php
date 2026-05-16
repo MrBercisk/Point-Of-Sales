@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Product extends Model
 {
@@ -182,5 +183,19 @@ class Product extends Model
    public function scopeOfType(Builder $query, string $type): Builder
     {
         return $query->where('type', $type);
+    }
+
+    /* buat tambahan misal nambah telur dll */
+    public function modifierGroups(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            ModifierGroup::class,
+            'product_modifier_groups'
+        );
+    }
+
+    public function hasModifiers(): bool
+    {
+        return $this->modifierGroups()->where('is_active', true)->exists();
     }
 }

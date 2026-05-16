@@ -23,6 +23,7 @@ use UnitEnum;
 
 // permission filament
 use App\Filament\Traits\HasFilamentPermission;
+use App\Services\OrderItemModifierService;
 
 class PosCashier extends Page implements HasForms
 {
@@ -65,6 +66,13 @@ class PosCashier extends Page implements HasForms
     public bool $showCheckoutModal = false;
 
     protected bool $lazyLoad = false;
+
+
+    // modal pilihan tambahan
+    public bool $showModifierModal = false;
+    public ?int $pendingProductId = null;
+    public array $selectedModifiers = [];
+    public array $pendingModifierGroups = [];
 
     public static function canAccess(): bool
     {
@@ -227,9 +235,39 @@ class PosCashier extends Page implements HasForms
             $this->dispatch('notify', type: 'error', message: 'Stok habis!');
             return;
         }
-            $existingIndex = $this->cart->search(fn ($item) => $item['product_id'] === $productId);
 
-        if ($existingIndex !== false) {
+        // cek apakah produk punya modifier group aktif
+        $modifierGroups = $product->modifierGroups()
+            ->where('is_active', true)
+            ->with(['modifiers' => fn($q) => $q->where('is_active', true)])
+            ->get();
+
+        if ($modifierGroups->isNotEmpty()) {
+            // tampilkan modal pilihan tambahan dulu
+            $this->pendingProductId = $productId;
+            $this->pendingModifierGroups = $modifierGroups->toArray();
+            $this->selectedModifiers = [];
+            $this->showModifierModal = true;
+            return;
+        }
+
+        // tidak ada tambahan modifier, langsung masuk keranjang
+        $this->pushToCart($product, []);
+    }
+
+    private function pushToCart(Product $product, array $modifiers): void
+    {
+        // hitung total harga modifier yang dipilih
+        $modifiersTotal = collect($modifiers)->sum('price');
+
+        $existingIndex = $this->cart->search(
+            fn ($item) =>
+                $item['product_id'] === $product->id &&
+                // kalau ada modifier, tidak digabung — buat item baru
+                empty($item['modifiers'])  && empty($modifiers)
+        );
+
+        if ($existingIndex !== false && empty($modifiers)) {
             $currentQty = $this->cart[$existingIndex]['quantity'];
             if ($currentQty >= $product->stock) {
                 $this->dispatch('notify', type: 'error', message: "Stok tidak cukup! Tersedia: {$product->stock}");
@@ -240,18 +278,99 @@ class PosCashier extends Page implements HasForms
             $this->cart = collect($cart);
         } else {
             $this->cart->push([
-                'product_id' => $product->id,
-                'name'       => $product->name,
-                'price'      => (float) $product->price,
-                'quantity'   => 1,
-                'stock'      => $product->stock,
-                'image'      => $product->image,
+                'product_id'      => $product->id,
+                'name'            => $product->name,
+                'price'           => (float) $product->price + $modifiersTotal,
+                'base_price'      => (float) $product->price,
+                'quantity'        => 1,
+                'stock'           => $product->stock,
+                'image'           => $product->image,
+                'modifiers'       => $modifiers,
             ]);
         }
 
         $this->dispatch('product-added');
     }
+    public function confirmModifiers(): void
+    {
+        $product = Product::find($this->pendingProductId);
+        if (! $product) return;
 
+        // validasi modifier wajib
+        foreach ($this->pendingModifierGroups as $group) {
+            if ($group['is_required']) {
+                $hasSelected = collect($this->selectedModifiers)
+                    ->contains(fn($id) =>
+                        collect($group['modifiers'])->contains('id', $id)
+                    );
+                if (! $hasSelected) {
+                    $this->dispatch('notify', type: 'error', message: "Pilihan \"{$group['name']}\" wajib dipilih!");
+                    return;
+                }
+            }
+        }
+
+        // ambil data modifier yang dipilih
+        $selectedModifierData = [];
+        foreach ($this->selectedModifiers as $modifierId) {
+            foreach ($this->pendingModifierGroups as $group) {
+                $modifier = collect($group['modifiers'])->firstWhere('id', $modifierId);
+                if ($modifier) {
+                    $selectedModifierData[] = [
+                        'id'    => $modifier['id'],
+                        'name'  => $modifier['name'],
+                        'price' => (float) $modifier['price'],
+                    ];
+                }
+            }
+        }
+
+        $this->pushToCart($product, $selectedModifierData);
+        $this->closeModifierModal();
+    }
+
+    public function closeModifierModal(): void
+    {
+        $this->showModifierModal = false;
+        $this->pendingProductId = null;
+        $this->selectedModifiers = [];
+        $this->pendingModifierGroups = [];
+    }
+
+    public function toggleModifier(int $modifierId, int $groupId, int $maxSelect): void
+    {
+        // cek berapa yang sudah dipilih dari grup ini
+        $groupModifierIds = collect($this->pendingModifierGroups)
+            ->firstWhere('id', $groupId)['modifiers'] ?? [];
+        $groupModifierIds = collect($groupModifierIds)->pluck('id')->toArray();
+
+        $selectedInGroup = collect($this->selectedModifiers)
+            ->filter(fn($id) => in_array($id, $groupModifierIds))
+            ->values();
+
+        if (in_array($modifierId, $this->selectedModifiers)) {
+            // deselect
+            $this->selectedModifiers = collect($this->selectedModifiers)
+                ->filter(fn($id) => $id !== $modifierId)
+                ->values()
+                ->toArray();
+        } else {
+            // cek max select
+            if ($selectedInGroup->count() >= $maxSelect) {
+                if ($maxSelect === 1) {
+                    // kalau max 1, replace pilihan sebelumnya
+                    $this->selectedModifiers = collect($this->selectedModifiers)
+                        ->filter(fn($id) => ! in_array($id, $groupModifierIds))
+                        ->values()
+                        ->toArray();
+                } else {
+                    $this->dispatch('notify', type: 'error', message: "Maksimal {$maxSelect} pilihan untuk grup ini!");
+                    return;
+                }
+            }
+            $this->selectedModifiers[] = $modifierId;
+        }
+    }
     public function removeFromCart(int $index): void
     {
         $cart = $this->cart->toArray();
@@ -362,13 +481,18 @@ class PosCashier extends Page implements HasForms
         ]);
 
         foreach ($this->cart as $item) {
-            OrderItem::create([
+            $orderItem = OrderItem::create([
                 'order_id'   => $order->id,
                 'product_id' => $item['product_id'],
                 'quantity'   => $item['quantity'],
-                'price'      => $item['price'],
+                'price'      => $item['base_price'] ?? $item['price'],
                 'subtotal'   => $item['price'] * $item['quantity'],
             ]);
+            if (! empty($item['modifiers'])) {
+                $modifierService = app(OrderItemModifierService::class);
+                $modifierIds = collect($item['modifiers'])->pluck('id')->toArray();
+                $modifierService->attachModifiers($orderItem, $modifierIds);
+            }
         }
 
         $balanceAfter = null;

@@ -228,6 +228,19 @@ class ProductForm
                                 ->helperText(__('app.stock_alert_helper')),
                         ])
                         ->columns(2),
+
+                        Section::make('Modifier / Bahan Tambahan')
+                        ->description('Pilih grup modifier yang tersedia untuk produk ini')
+                        ->schema([
+                            Select::make('modifierGroups')
+                                ->label('Grup Modifier')
+                                ->relationship('modifierGroups', 'name')
+                                ->multiple()
+                                ->preload()
+                                ->searchable()
+                                ->helperText('Kosongkan kalau produk ini tidak punya pilihan tambahan'),
+                        ])
+                        ->collapsible(),
                 ])
                 ->columnSpan(['lg' => 2]),
 
@@ -239,7 +252,12 @@ class ProductForm
                                 ->label(__('app.active'))
                                 ->default(true)
                                 ->helperText(__('app.inactive_products_helper')),
+                            Toggle::make('not_for_selling')
+                                ->label('Bahan Baku / Topping')
+                                ->default(false)
+                                ->helperText('Aktifkan jika produk ini adalah bahan baku atau topping — tidak akan muncul di kasir'),
                         ]),
+
 
                     Section::make('SEO')
                         ->schema([
