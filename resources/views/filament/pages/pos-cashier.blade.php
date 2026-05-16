@@ -346,11 +346,13 @@
                 wire:click="selectCategory(null)"
                 class="cat-pill {{ is_null($selectedCategory) ? 'active' : '' }}"
             >Semua</button>
-            @foreach($this->categories as $cat)
+           @foreach($this->categories as $cat)
+            @if($cat->products_count > 0) 
             <button
                 wire:click="selectCategory({{ $cat->id }})"
                 class="cat-pill {{ $selectedCategory === $cat->id ? 'active' : '' }}"
             >{{ $cat->name }} <span style="opacity:.7">({{ $cat->products_count }})</span></button>
+            @endif 
             @endforeach
         </div>
 

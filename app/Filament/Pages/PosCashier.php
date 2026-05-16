@@ -110,17 +110,20 @@ class PosCashier extends Page implements HasForms
 
     /* computed */
 
-    #[Computed]
+   #[Computed]
     public function categories(): Collection
     {
         return Cache::remember('pos_categories', 60, fn() =>
             Category::where('is_active', true)
-                ->withCount('products')
+                ->withCount(['products' => fn($q) => $q
+                    ->where('is_active', true)
+                    ->where('stock', '>', 0)
+                    ->where('not_for_selling', false)  // sesuaikan nama kolom
+                ])
                 ->orderBy('name')
                 ->get()
         );
     }
-
     #[Computed]
     public function products(): Collection
     {
@@ -128,6 +131,7 @@ class PosCashier extends Page implements HasForms
             ->select('id', 'name', 'price', 'stock', 'image', 'barcode', 'category_id')
             ->where('is_active', true)
             ->where('stock', '>', 0)
+             ->where('not_for_selling', false) 
             ->when($this->searchProduct, fn($q) =>
                 $q->where('name', 'like', '%' . $this->searchProduct . '%')
                 ->orWhere('barcode', $this->searchProduct)
