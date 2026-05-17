@@ -30,6 +30,10 @@
         .item-detail { font-size: 9px; color: #555; }
         .item-price  { width: 45%; text-align: right; font-size: 11px; }
 
+        /* ── Modifier lines ── */
+        .modifier-line       { font-size: 9px; color: #555; padding-left: 8px; }
+        .modifier-line-price { text-align: right; white-space: nowrap; font-size: 9px; color: #555; }
+
         /* ── Layout: compact ── */
         .item-compact { display: flex; justify-content: space-between; font-size: 11px; padding: 1px 0; }
         .item-compact-name  { flex: 1; }
@@ -60,172 +64,207 @@
         .barcode-bars { font-family: monospace; font-size: 14px; letter-spacing: -1px; }
         .barcode-text { font-size: 9px; color: #555; }
 
-        .saldo-box { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 2px 4px; border-radius: 2px; }
+        .saldo-box   { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 2px 4px; border-radius: 2px; }
         .saldo-label { color: #166534; }
         .saldo-val   { color: #15803d; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    {{-- ── Header toko ── --}}
-    @if($showStoreName)
-    <p class="store-name">{{ $storeName }}</p>
-    @endif
-    @if($showAddress && $storeAddress)
-    <p class="store-info">{{ $storeAddress }}</p>
-    @endif
-    @if($showPhone && $storePhone)
-    <p class="store-info">Telp: {{ $storePhone }}</p>
-    @endif
+{{-- ── Header toko ── --}}
+@if($showStoreName)
+<p class="store-name">{{ $storeName }}</p>
+@endif
+@if($showAddress && $storeAddress)
+<p class="store-info">{{ $storeAddress }}</p>
+@endif
+@if($showPhone && $storePhone)
+<p class="store-info">Telp: {{ $storePhone }}</p>
+@endif
 
-    <div class="divider"></div>
+<div class="divider"></div>
 
-    {{-- ── Info invoice ── --}}
-    <table class="meta">
-        @if($showInvoiceNumber)
-        <tr>
-            <td class="meta-label">Invoice</td>
-            <td class="meta-value">{{ $order->invoice_number }}</td>
-        </tr>
+{{-- ── Info invoice ── --}}
+<table class="meta">
+    @if($showInvoiceNumber)
+    <tr>
+        <td class="meta-label">Invoice</td>
+        <td class="meta-value">{{ $order->invoice_number }}</td>
+    </tr>
+    @endif
+    @if($showDate)
+    <tr>
+        <td class="meta-label">Tanggal</td>
+        <td class="meta-value">{{ $order->created_at->format('d/m/Y H:i') }}</td>
+    </tr>
+    @endif
+    @if($showStudent && $order->customer_name)
+    <tr>
+        <td class="meta-label">Siswa</td>
+        <td class="meta-value">{{ $order->customer_name }}</td>
+    </tr>
+    @endif
+    @if($showPaymentMethod)
+    <tr>
+        <td class="meta-label">Bayar</td>
+        <td class="meta-value">
+            <span class="badge">{{ $order->payment_method === 'wallet' ? 'Dompet' : 'Tunai' }}</span>
+        </td>
+    </tr>
+    @endif
+    @if($showCashier && isset($cashierName))
+    <tr>
+        <td class="meta-label">Kasir</td>
+        <td class="meta-value">{{ $cashierName }}</td>
+    </tr>
+    @endif
+</table>
+
+<div class="divider"></div>
+
+{{-- ── Item produk ── --}}
+
+{{--
+    CATATAN STRUKTUR:
+    $item->modifiers  →  koleksi OrderItemModifier (HasMany)
+    $m->modifier      →  relasi ke model Modifier (nama, dll)
+    $m->price_snapshot → harga modifier saat transaksi
+    $m->modifier->name → nama modifier
+--}}
+
+@if($layout === 'compact')
+
+    @foreach($order->items as $item)
+    <div class="item-compact">
+        <span class="item-compact-name">{{ $item->product->name }} ({{ $item->quantity }}×)</span>
+        <span class="item-compact-price">{{ number_format($item->subtotal, 0, ',', '.') }}</span>
+    </div>
+    @foreach($item->modifiers as $m)
+    <div class="item-compact" style="padding-left:8px;">
+        <span class="item-compact-name modifier-line">+ {{ $m->modifier->name ?? $m->name ?? '-' }}</span>
+        @if($m->price_snapshot > 0)
+        <span class="modifier-line-price">+{{ number_format($m->price_snapshot, 0, ',', '.') }}</span>
         @endif
-        @if($showDate)
-        <tr>
-            <td class="meta-label">Tanggal</td>
-            <td class="meta-value">{{ $order->created_at->format('d/m/Y H:i') }}</td>
-        </tr>
-        @endif
-        @if($showStudent && $order->customer_name)
-        <tr>
-            <td class="meta-label">Siswa</td>
-            <td class="meta-value">{{ $order->customer_name }}</td>
-        </tr>
-        @endif
-        @if($showPaymentMethod)
-        <tr>
-            <td class="meta-label">Bayar</td>
-            <td class="meta-value">
-                <span class="badge">{{ $order->payment_method === 'wallet' ? 'Dompet' : 'Tunai' }}</span>
-            </td>
-        </tr>
-        @endif
-        @if($showCashier && isset($cashierName))
-        <tr>
-            <td class="meta-label">Kasir</td>
-            <td class="meta-value">{{ $cashierName }}</td>
-        </tr>
-        @endif
+    </div>
+    @endforeach
+    @endforeach
+
+@elseif($layout === 'detailed')
+
+    <table class="items-detailed">
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th class="right" style="width:20px">Qty</th>
+                <th class="right" style="width:50px">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($order->items as $item)
+            <tr>
+                <td>{{ $item->product->name }}</td>
+                <td class="td-qty">{{ $item->quantity }}</td>
+                <td class="td-total">{{ number_format($item->subtotal, 0, ',', '.') }}</td>
+            </tr>
+            @if($showItemPrice)
+            <tr>
+                <td colspan="3" class="item-detail">
+                    Rp {{ number_format($item->price, 0, ',', '.') }} / pcs
+                </td>
+            </tr>
+            @endif
+            @foreach($item->modifiers as $m)
+            <tr>
+                <td class="modifier-line" colspan="2">+ {{ $m->modifier->name ?? $m->name ?? '-' }}</td>
+                @if($m->price_snapshot > 0)
+                <td class="modifier-line-price">+{{ number_format($m->price_snapshot, 0, ',', '.') }}</td>
+                @else
+                <td></td>
+                @endif
+            </tr>
+            @endforeach
+            @endforeach
+        </tbody>
     </table>
 
-    <div class="divider"></div>
+@else
 
-    {{-- ── Item produk ── --}}
-
-    @if($layout === 'compact')
-        {{-- COMPACT: 1 baris per item --}}
-        @foreach($order->items as $item)
-        <div class="item-compact">
-            <span class="item-compact-name">{{ $item->product->name }} ({{ $item->quantity }}×)</span>
-            <span class="item-compact-price">{{ number_format($item->subtotal, 0, ',', '.') }}</span>
-        </div>
-        @endforeach
-
-    @elseif($layout === 'detailed')
-        {{-- DETAILED: tabel dengan kolom Qty dan Total --}}
-        <table class="items-detailed">
-            <thead>
-                <tr>
-                    <th>Item</th>
-                    <th class="right" style="width:20px">Qty</th>
-                    <th class="right" style="width:50px">Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($order->items as $item)
-                <tr>
-                    <td>{{ $item->product->name }}</td>
-                    <td class="td-qty">{{ $item->quantity }}</td>
-                    <td class="td-total">{{ number_format($item->subtotal, 0, ',', '.') }}</td>
-                </tr>
-                @if($showItemPrice)
-                <tr>
-                    <td colspan="3" class="item-detail">
-                        Rp {{ number_format($item->price, 0, ',', '.') }} / pcs
-                    </td>
-                </tr>
+    {{-- STANDARD --}}
+    <table class="items">
+        <tbody>
+            @foreach($order->items as $item)
+            <tr>
+                <td class="item-name">{{ $item->product->name }}</td>
+                @if($showSubtotalPerItem)
+                <td class="item-price">{{ number_format($item->subtotal, 0, ',', '.') }}</td>
                 @endif
-                @endforeach
-            </tbody>
-        </table>
-
-    @else
-        {{-- STANDARD: nama produk + detail di baris kedua --}}
-        <table class="items">
-            <tbody>
-                @foreach($order->items as $item)
-                <tr>
-                    <td class="item-name">{{ $item->product->name }}</td>
-                    @if($showSubtotalPerItem)
-                    <td class="item-price">{{ number_format($item->subtotal, 0, ',', '.') }}</td>
-                    @endif
-                </tr>
-                @if($showItemPrice)
-                <tr>
-                    <td colspan="2" class="item-detail">
-                        {{ $item->quantity }} × Rp {{ number_format($item->price, 0, ',', '.') }}
-                    </td>
-                </tr>
+            </tr>
+            @if($showItemPrice)
+            <tr>
+                <td colspan="2" class="item-detail">
+                    {{ $item->quantity }} × Rp {{ number_format($item->price, 0, ',', '.') }}
+                </td>
+            </tr>
+            @endif
+            @foreach($item->modifiers as $m)
+            <tr>
+                <td class="modifier-line">+ {{ $m->modifier->name ?? $m->name ?? '-' }}</td>
+                @if($m->price_snapshot > 0)
+                <td class="modifier-line-price">+{{ number_format($m->price_snapshot, 0, ',', '.') }}</td>
+                @else
+                <td></td>
                 @endif
-                @endforeach
-            </tbody>
-        </table>
-    @endif
+            </tr>
+            @endforeach
+            @endforeach
+        </tbody>
+    </table>
 
-    <div class="divider"></div>
+@endif
 
-    {{-- ── Ringkasan pembayaran ── --}}
-    <div class="summary-row summary-total">
-        <span>TOTAL</span>
-        <span>Rp {{ number_format($order->total_amount, 0, ',', '.') }}</span>
-    </div>
+<div class="divider"></div>
 
-    {{-- Sisa saldo dompet --}}
-    @if($showBalanceAfter && $order->payment_method === 'wallet' && isset($order->balance_after))
-    <div class="summary-row summary-sub saldo-box" style="margin-top:3px;">
-        <span class="saldo-label">Sisa Saldo</span>
-        <span class="saldo-val">Rp {{ number_format($order->balance_after, 0, ',', '.') }}</span>
-    </div>
-    @endif
+{{-- ── Ringkasan pembayaran ── --}}
+<div class="summary-row summary-total">
+    <span>TOTAL</span>
+    <span>Rp {{ number_format($order->total_amount, 0, ',', '.') }}</span>
+</div>
 
-    {{-- Kembalian tunai --}}
-    @if($showChange && $order->payment_method === 'cash' && $order->cash_amount)
-    <div class="summary-row summary-sub">
-        <span>Bayar</span>
-        <span>Rp {{ number_format($order->cash_amount, 0, ',', '.') }}</span>
-    </div>
-    <div class="summary-row summary-sub">
-        <span>Kembalian</span>
-        <span>Rp {{ number_format($order->change_amount, 0, ',', '.') }}</span>
-    </div>
-    @endif
+@if($showBalanceAfter && $order->payment_method === 'wallet' && isset($order->balance_after))
+<div class="summary-row summary-sub saldo-box" style="margin-top:3px;">
+    <span class="saldo-label">Sisa Saldo</span>
+    <span class="saldo-val">Rp {{ number_format($order->balance_after, 0, ',', '.') }}</span>
+</div>
+@endif
 
-    {{-- ── Footer ── --}}
-    @if($showFooter && $storeFooter)
-    <div class="divider"></div>
-    <div class="footer">
-        @foreach(explode("\n", $storeFooter) as $line)
-            @if(trim($line))<p>{{ trim($line) }}</p>@endif
-        @endforeach
-        <p class="footer-brand">— {{ $storeName }} —</p>
-    </div>
-    @endif
+@if($showChange && $order->payment_method === 'cash' && $order->cash_amount)
+<div class="summary-row summary-sub">
+    <span>Bayar</span>
+    <span>Rp {{ number_format($order->cash_amount, 0, ',', '.') }}</span>
+</div>
+<div class="summary-row summary-sub">
+    <span>Kembalian</span>
+    <span>Rp {{ number_format($order->change_amount, 0, ',', '.') }}</span>
+</div>
+@endif
 
-    {{-- ── Barcode invoice ── --}}
-    @if($showBarcode)
-    <div class="barcode-wrap">
-        <div class="barcode-bars">||| || ||| | || ||| ||</div>
-        <div class="barcode-text">{{ $order->invoice_number }}</div>
-    </div>
-    @endif
+{{-- ── Footer ── --}}
+@if($showFooter && $storeFooter)
+<div class="divider"></div>
+<div class="footer">
+    @foreach(explode("\n", $storeFooter) as $line)
+        @if(trim($line))<p>{{ trim($line) }}</p>@endif
+    @endforeach
+    <p class="footer-brand">— {{ $storeName }} —</p>
+</div>
+@endif
+
+@if($showBarcode)
+<div class="barcode-wrap">
+    <div class="barcode-bars">||| || ||| | || ||| ||</div>
+    <div class="barcode-text">{{ $order->invoice_number }}</div>
+</div>
+@endif
 
 </body>
 </html>

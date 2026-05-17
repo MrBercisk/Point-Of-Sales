@@ -10,11 +10,15 @@ class Order extends Model
 {
     protected $fillable = [
         'invoice_number',
+        'student_id',
         'customer_name',
+        'customer_phone',
         'total_amount',
+        'payment_method',
+        'cash_amount',
+        'change_amount',
         'status',
         'notes',
-        'customer_phone',
     ];
 
     protected $casts = [
@@ -22,10 +26,9 @@ class Order extends Model
     ];
 
     /* auto generate invoice number saat create */
-     protected static function boot()
+    protected static function boot()
     {
         parent::boot();
-
         static::creating(function ($order) {
             if (empty($order->invoice_number)) {
                 $order->invoice_number = self::generateInvoiceNumber();
@@ -34,11 +37,10 @@ class Order extends Model
     }
 
     /* generate invoice number unique */
-     public static function generateInvoiceNumber(): string
+    public static function generateInvoiceNumber(): string
     {
         $today = now()->format('Ymd');
         $count = self::whereDate('created_at', today())->count() + 1;
-
         return 'INV-' . $today . '-' . str_pad($count, 4, '0', STR_PAD_LEFT);
     }
 
@@ -48,16 +50,18 @@ class Order extends Model
         return $this->hasMany(OrderItem::class);
     }
 
-    /* hitung dan update total dari semua items */
-     public function calculateTotal(): void
+    /* hitung dan update total dari semua items
+     * PENTING: pakai items() bukan items supaya selalu fresh query dari DB,
+     * tidak pakai cache relasi yang stale — ini fix utama total meleset saat ada modifier.
+     * saveQuietly supaya tidak trigger event cascade. */
+    public function calculateTotal(): void
     {
-        $this->total_amount = $this->items->sum('subtotal');
-        $this->save();
+        $this->total_amount = $this->items()->sum('subtotal'); // () = fresh query, bukan cache
+        $this->saveQuietly();
     }
 
     /* get format total rupiah */
-
-     public function getFormattedTotalAttribute(): string
+    public function getFormattedTotalAttribute(): string
     {
         return 'Rp ' . number_format($this->total_amount, 0, ',', '.');
     }
@@ -75,13 +79,10 @@ class Order extends Model
         foreach ($this->items as $item) {
             $item->product->increaseStock($item->quantity);
         }
-
         $this->update(['status' => 'cancelled']);
     }
 
     /* filter filter */
-
-
     /* scope yang ordeeran completd */
     public function scopeCompleted(Builder $query): Builder
     {
@@ -95,7 +96,7 @@ class Order extends Model
     }
 
     /* scope orderan hari ini */
-     public function scopeToday(Builder $query): Builder
+    public function scopeToday(Builder $query): Builder
     {
         return $query->whereDate('created_at', today());
     }

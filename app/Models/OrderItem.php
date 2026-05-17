@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -26,13 +27,20 @@ class OrderItem extends Model
         parent::boot();
 
         // Auto-calculate subtotal before creating
+        // HANYA jika belum di-set secara eksplisit dari luar (misal PosCashier sudah
+        // hitung (base + modifier) × qty). Kalau di-override di sini, modifier hilang dari subtotal.
         static::creating(function ($item) {
-            $item->subtotal = $item->price * $item->quantity;
+            if (empty($item->subtotal)) {
+                $item->subtotal = $item->price * $item->quantity;
+            }
         });
 
         // Auto-calculate subtotal before updating
+        // Skip kalau subtotal sudah di-set dirty dari luar (misal recalculateSubtotal)
         static::updating(function ($item) {
-            $item->subtotal = $item->price * $item->quantity;
+            if (! $item->isDirty('subtotal')) {
+                $item->subtotal = $item->price * $item->quantity;
+            }
         });
 
         // Reduce product stock after item created
@@ -54,7 +62,6 @@ class OrderItem extends Model
             if ($item->product && $item->order->status !== 'cancelled') {
                 $item->product->increaseStock($item->quantity);
             }
-
             // Restore stock bahan tambahan (telur, keju, dll)
             foreach ($item->modifiers as $orderItemModifier) {
                 $modifier = $orderItemModifier->modifier;
@@ -95,10 +102,12 @@ class OrderItem extends Model
         return $this->modifiers->sum('price_snapshot');
     }
 
-    /* recalculate subtotal termasuk modifier setelah modifier disimpan */
+    /* recalculate subtotal termasuk modifier setelah modifier disimpan
+     * Pakai fresh query () supaya tidak pakai cache modifier yang stale.
+     * saveQuietly supaya tidak trigger boot saved lagi. */
     public function recalculateSubtotal(): void
     {
-        $modifiersTotal = $this->modifiers->sum('price_snapshot');
+        $modifiersTotal = $this->modifiers()->sum('price_snapshot'); // fresh query
         $this->subtotal = ($this->price + $modifiersTotal) * $this->quantity;
         $this->saveQuietly(); // saveQuietly supaya tidak trigger boot saved lagi
         $this->order->calculateTotal();

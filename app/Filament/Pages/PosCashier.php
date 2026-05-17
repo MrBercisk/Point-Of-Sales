@@ -21,7 +21,6 @@ use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Cache;
 use UnitEnum;
 
-// permission filament
 use App\Filament\Traits\HasFilamentPermission;
 use App\Services\OrderItemModifierService;
 
@@ -39,7 +38,6 @@ class PosCashier extends Page implements HasForms
     protected static ?int $navigationSort     = 2;
     protected string $view                    = 'filament.pages.pos-cashier';
 
-    // mode tamu
     public bool $isGuestMode = false;
 
     public Collection $cart;
@@ -62,13 +60,10 @@ class PosCashier extends Page implements HasForms
     public bool   $showReceiptModal = false;
     public ?array $lastOrder        = null;
 
-    
     public bool $showCheckoutModal = false;
 
     protected bool $lazyLoad = false;
 
-
-    // modal pilihan tambahan
     public bool $showModifierModal = false;
     public ?int $pendingProductId = null;
     public array $selectedModifiers = [];
@@ -77,40 +72,27 @@ class PosCashier extends Page implements HasForms
     public static function canAccess(): bool
     {
         $user = request()->user();
-
-        if (! $user) {
-            return false;
-        }
-
-        if ($user->hasRole('super_admin')) {
-            return true;
-        }
-
+        if (! $user) return false;
+        if ($user->hasRole('super_admin')) return true;
         return $user->can('pos-cashier.view');
     }
 
-    
-    // fullscreen tanpa sidebar/navbar
     public function getLayout(): string
     {
-       return 'filament.layouts.pos'; 
-    }
-    public function getLayoutData(): array
-    {
-        return [
-            'title' => 'POS Cashier',
-        ];
+        return 'filament.layouts.pos';
     }
 
+    public function getLayoutData(): array
+    {
+        return ['title' => 'POS Cashier'];
+    }
 
     public function mount(): void
     {
         $this->cart = collect();
     }
 
-    /* computed */
-
-   #[Computed]
+    #[Computed]
     public function categories(): Collection
     {
         return Cache::remember('pos_categories', 60, fn() =>
@@ -118,12 +100,13 @@ class PosCashier extends Page implements HasForms
                 ->withCount(['products' => fn($q) => $q
                     ->where('is_active', true)
                     ->where('stock', '>', 0)
-                    ->where('not_for_selling', false)  // sesuaikan nama kolom
+                    ->where('not_for_selling', false)
                 ])
                 ->orderBy('name')
                 ->get()
         );
     }
+
     #[Computed]
     public function products(): Collection
     {
@@ -131,10 +114,10 @@ class PosCashier extends Page implements HasForms
             ->select('id', 'name', 'price', 'stock', 'image', 'barcode', 'category_id')
             ->where('is_active', true)
             ->where('stock', '>', 0)
-             ->where('not_for_selling', false) 
+            ->where('not_for_selling', false)
             ->when($this->searchProduct, fn($q) =>
                 $q->where('name', 'like', '%' . $this->searchProduct . '%')
-                ->orWhere('barcode', $this->searchProduct)
+                  ->orWhere('barcode', $this->searchProduct)
             )
             ->when($this->selectedCategory, fn($q) =>
                 $q->where('category_id', $this->selectedCategory)
@@ -159,7 +142,6 @@ class PosCashier extends Page implements HasForms
             ->limit(8)
             ->get();
     }
-
 
     /* cart helper */
 
@@ -187,7 +169,6 @@ class PosCashier extends Page implements HasForms
     {
         return $this->selectedStudentBalance >= $this->cartTotal();
     }
-
 
     /* siswa */
 
@@ -224,8 +205,6 @@ class PosCashier extends Page implements HasForms
         }
     }
 
-    /* kategori produk */
-
     public function selectCategory(?int $categoryId): void
     {
         $this->selectedCategory = $categoryId === $this->selectedCategory ? null : $categoryId;
@@ -240,35 +219,30 @@ class PosCashier extends Page implements HasForms
             return;
         }
 
-        // cek apakah produk punya modifier group aktif
         $modifierGroups = $product->modifierGroups()
             ->where('is_active', true)
             ->with(['modifiers' => fn($q) => $q->where('is_active', true)])
             ->get();
 
         if ($modifierGroups->isNotEmpty()) {
-            // tampilkan modal pilihan tambahan dulu
-            $this->pendingProductId = $productId;
+            $this->pendingProductId      = $productId;
             $this->pendingModifierGroups = $modifierGroups->toArray();
-            $this->selectedModifiers = [];
-            $this->showModifierModal = true;
+            $this->selectedModifiers     = [];
+            $this->showModifierModal     = true;
             return;
         }
 
-        // tidak ada tambahan modifier, langsung masuk keranjang
         $this->pushToCart($product, []);
     }
 
     private function pushToCart(Product $product, array $modifiers): void
     {
-        // hitung total harga modifier yang dipilih
         $modifiersTotal = collect($modifiers)->sum('price');
 
         $existingIndex = $this->cart->search(
             fn ($item) =>
                 $item['product_id'] === $product->id &&
-                // kalau ada modifier, tidak digabung — buat item baru
-                empty($item['modifiers'])  && empty($modifiers)
+                empty($item['modifiers']) && empty($modifiers)
         );
 
         if ($existingIndex !== false && empty($modifiers)) {
@@ -282,31 +256,29 @@ class PosCashier extends Page implements HasForms
             $this->cart = collect($cart);
         } else {
             $this->cart->push([
-                'product_id'      => $product->id,
-                'name'            => $product->name,
-                'price'           => (float) $product->price + $modifiersTotal,
-                'base_price'      => (float) $product->price,
-                'quantity'        => 1,
-                'stock'           => $product->stock,
-                'image'           => $product->image,
-                'modifiers'       => $modifiers,
+                'product_id' => $product->id,
+                'name'       => $product->name,
+                'price'      => (float) $product->price + $modifiersTotal,
+                'base_price' => (float) $product->price,
+                'quantity'   => 1,
+                'stock'      => $product->stock,
+                'image'      => $product->image,
+                'modifiers'  => $modifiers,
             ]);
         }
 
         $this->dispatch('product-added');
     }
+
     public function confirmModifiers(): void
     {
         $product = Product::find($this->pendingProductId);
         if (! $product) return;
 
-        // validasi modifier wajib
         foreach ($this->pendingModifierGroups as $group) {
             if ($group['is_required']) {
                 $hasSelected = collect($this->selectedModifiers)
-                    ->contains(fn($id) =>
-                        collect($group['modifiers'])->contains('id', $id)
-                    );
+                    ->contains(fn($id) => collect($group['modifiers'])->contains('id', $id));
                 if (! $hasSelected) {
                     $this->dispatch('notify', type: 'error', message: "Pilihan \"{$group['name']}\" wajib dipilih!");
                     return;
@@ -314,7 +286,6 @@ class PosCashier extends Page implements HasForms
             }
         }
 
-        // ambil data modifier yang dipilih
         $selectedModifierData = [];
         foreach ($this->selectedModifiers as $modifierId) {
             foreach ($this->pendingModifierGroups as $group) {
@@ -335,15 +306,14 @@ class PosCashier extends Page implements HasForms
 
     public function closeModifierModal(): void
     {
-        $this->showModifierModal = false;
-        $this->pendingProductId = null;
-        $this->selectedModifiers = [];
+        $this->showModifierModal     = false;
+        $this->pendingProductId      = null;
+        $this->selectedModifiers     = [];
         $this->pendingModifierGroups = [];
     }
 
     public function toggleModifier(int $modifierId, int $groupId, int $maxSelect): void
     {
-        // cek berapa yang sudah dipilih dari grup ini
         $groupModifierIds = collect($this->pendingModifierGroups)
             ->firstWhere('id', $groupId)['modifiers'] ?? [];
         $groupModifierIds = collect($groupModifierIds)->pluck('id')->toArray();
@@ -353,16 +323,13 @@ class PosCashier extends Page implements HasForms
             ->values();
 
         if (in_array($modifierId, $this->selectedModifiers)) {
-            // deselect
             $this->selectedModifiers = collect($this->selectedModifiers)
                 ->filter(fn($id) => $id !== $modifierId)
                 ->values()
                 ->toArray();
         } else {
-            // cek max select
             if ($selectedInGroup->count() >= $maxSelect) {
                 if ($maxSelect === 1) {
-                    // kalau max 1, replace pilihan sebelumnya
                     $this->selectedModifiers = collect($this->selectedModifiers)
                         ->filter(fn($id) => ! in_array($id, $groupModifierIds))
                         ->values()
@@ -375,6 +342,7 @@ class PosCashier extends Page implements HasForms
             $this->selectedModifiers[] = $modifierId;
         }
     }
+
     public function removeFromCart(int $index): void
     {
         $cart = $this->cart->toArray();
@@ -419,7 +387,6 @@ class PosCashier extends Page implements HasForms
         $this->updateQuantity($index, $newQty);
     }
 
-    
     /* checkout */
 
     public function checkout(): void
@@ -428,16 +395,16 @@ class PosCashier extends Page implements HasForms
             request()->user()?->can('pos-cashier.view'),
             403
         );
+
         if ($this->cart->isEmpty()) {
             Notification::make()->title('Keranjang kosong!')->danger()->send();
             return;
         }
 
-        $total = $this->cartTotal();
+        $total = $this->cartTotal(); // sudah include modifier
 
         if ($this->paymentMethod === 'wallet') {
             if ($this->isGuestMode) {
-                // tamu cuma pakai cash
                 $this->paymentMethod = 'cash';
             } elseif (! $this->selectedStudentId) {
                 Notification::make()
@@ -471,6 +438,8 @@ class PosCashier extends Page implements HasForms
             return;
         }
 
+        // Buat order — total_amount dikunci dari cartTotal() supaya tidak berubah
+        // walau recalculateSubtotal() dipanggil setelahnya
         $order = Order::create([
             'student_id'     => $this->selectedStudentId,
             'customer_name'  => $this->selectedStudentName ?? ($this->isGuestMode ? 'Tamu' : null),
@@ -485,19 +454,34 @@ class PosCashier extends Page implements HasForms
         ]);
 
         foreach ($this->cart as $item) {
+            $basePrice      = (float) ($item['base_price'] ?? $item['price']);
+            $modifiersTotal = collect($item['modifiers'] ?? [])->sum('price');
+
+            // price = harga dasar saja (base_price)
+            // subtotal = (base_price + modifier) × qty  ← sudah benar
+            // recalculateSubtotal() di attachModifiers() akan hitung ulang
+            // dari price + price_snapshot modifier, hasilnya sama
             $orderItem = OrderItem::create([
                 'order_id'   => $order->id,
                 'product_id' => $item['product_id'],
                 'quantity'   => $item['quantity'],
-                'price'      => $item['base_price'] ?? $item['price'],
-                'subtotal'   => $item['price'] * $item['quantity'],
+                'price'      => $basePrice,
+                'subtotal'   => ($basePrice + $modifiersTotal) * $item['quantity'],
             ]);
+
             if (! empty($item['modifiers'])) {
                 $modifierService = app(OrderItemModifierService::class);
-                $modifierIds = collect($item['modifiers'])->pluck('id')->toArray();
+                $modifierIds     = collect($item['modifiers'])->pluck('id')->toArray();
+                // attachModifiers() → recalculateSubtotal() → calculateTotal()
+                // calculateTotal() akan menjumlah subtotal semua item,
+                // hasilnya sama dengan $total karena subtotal sudah di-set benar
                 $modifierService->attachModifiers($orderItem, $modifierIds);
             }
         }
+
+        // Setelah semua item & modifier tersimpan, kunci ulang total_amount
+        // supaya tidak meleset akibat floating point di calculateTotal()
+        $order->updateQuietly(['total_amount' => $total]);
 
         $balanceAfter = null;
         if ($this->paymentMethod === 'wallet' && $this->selectedStudentId) {
@@ -510,10 +494,13 @@ class PosCashier extends Page implements HasForms
             $balanceAfter = $student->fresh()->balance;
         }
 
+        // Generate PDF — load relasi lengkap termasuk modifier
         $pdfPath = null;
         try {
             $receiptService = app(ReceiptService::class);
-            $pdfPath        = $receiptService->generatePdf($order->load('items.product'));
+            $pdfPath        = $receiptService->generatePdf(
+                $order->load('items.product', 'items.modifiers.modifier')
+            );
         } catch (\Throwable) {}
 
         $settings = Settings::current();
@@ -587,7 +574,6 @@ class PosCashier extends Page implements HasForms
         Notification::make()->title('Keranjang dikosongkan')->send();
     }
 
-
     public function openCheckout(): void
     {
         if ($this->cart->isEmpty()) return;
@@ -601,29 +587,27 @@ class PosCashier extends Page implements HasForms
 
     public function checkoutFromModal(string $method, float $cash): void
     {
-        $this->paymentMethod = $method;
-        $this->cashAmount    = $cash;
+        $this->paymentMethod     = $method;
+        $this->cashAmount        = $cash;
         $this->showCheckoutModal = false;
         $this->checkout();
     }
 
     public function refreshProducts(): void
     {
-        /* jangan refresh klo modalnya terbuka */
         if ($this->showCheckoutModal || $this->showReceiptModal) return;
         unset($this->products);
         unset($this->categories);
     }
-    
-    /* tamu */
+
     public function setGuestMode(bool $guest): void
     {
         $this->isGuestMode = $guest;
         if ($guest) {
             $this->clearStudent();
-            $this->paymentMethod = 'cash'; // tamu hanya bisa tunai
-        }else{
-            $this->paymentMethod = 'wallet'; // default ke dompet kalau bukan tamu
+            $this->paymentMethod = 'cash';
+        } else {
+            $this->paymentMethod = 'wallet';
         }
     }
 }

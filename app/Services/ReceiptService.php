@@ -14,18 +14,15 @@ class ReceiptService
     private function storeData(): array
     {
         $s = Settings::current();
-
         return [
             // Info toko
             'storeName'    => $s->receipt_store_name    ?: 'Kantin Sekolah',
             'storeAddress' => $s->receipt_store_address ?: '',
             'storePhone'   => $s->receipt_store_phone   ?: '',
             'storeFooter'  => $s->receipt_footer        ?: 'Terima kasih! Selamat belajar.',
-
             // Layout & ukuran kertas
-            'layout'       => $s->receipt_layout        ?: 'standard', // standard|compact|detailed
-            'paperSize'    => $s->receipt_paper_size    ?: '80mm',     // 58mm|80mm
-
+            'layout'       => $s->receipt_layout        ?: 'standard',
+            'paperSize'    => $s->receipt_paper_size    ?: '80mm',
             // Toggle visibilitas
             'showStoreName'       => (bool) ($s->receipt_show_store_name        ?? true),
             'showAddress'         => (bool) ($s->receipt_show_address           ?? true),
@@ -45,13 +42,26 @@ class ReceiptService
     }
 
     /**
+     * Pastikan semua relasi yang dibutuhkan blade sudah ter-load.
+     * Aman dipanggil berkali-kali — loadMissing tidak query ulang relasi yang sudah ada.
+     */
+    private function ensureRelationsLoaded(Order $order): void
+    {
+        $order->loadMissing([
+            'items.product',
+            'items.modifiers.modifier', // OrderItemModifier → Modifier (nama)
+        ]);
+    }
+
+    /**
      * Generate PDF struk & simpan ke storage/app/receipts/{invoice_number}.pdf
      */
     public function generatePdf(Order $order): string
     {
+        $this->ensureRelationsLoaded($order);
+
         $data = array_merge($this->storeData(), ['order' => $order]);
 
-        // Ukuran kertas: 58mm = 164.41pt, 80mm = 226.77pt
         $paperWidth = ($data['paperSize'] === '58mm') ? 164.41 : 226.77;
 
         $pdf = Pdf::loadView('receipts.pdf', $data)
@@ -78,6 +88,8 @@ class ReceiptService
      */
     public function getPdfContent(Order $order): string
     {
+        $this->ensureRelationsLoaded($order);
+
         $data = array_merge($this->storeData(), ['order' => $order]);
 
         $paperWidth = ($data['paperSize'] === '58mm') ? 164.41 : 226.77;
