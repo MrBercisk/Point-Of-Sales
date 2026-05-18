@@ -18,6 +18,7 @@ use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
+use Filament\Forms\Components\DatePicker;
 
 class ProductForm
 {
@@ -71,6 +72,22 @@ class ProductForm
                                                 }),
                                         ]),
 
+                                        TextInput::make('sku')
+                                            ->label('SKU')
+                                            ->unique(ignoreRecord: true)
+                                            ->maxLength(255)
+                                            ->placeholder('Contoh: PRD-001')
+                                            ->prefixIcon('heroicon-o-tag')
+                                            ->helperText('Kode internal produk — isi manual atau generate otomatis')
+                                            ->suffixActions([
+                                                ActionsAction::make('generateSku')
+                                                    ->icon('heroicon-o-arrow-path')
+                                                    ->tooltip('Generate SKU otomatis')
+                                                    ->action(function (Get $get, Set $set) {
+                                                        $name = $get('name') ?? 'PRD';
+                                                        $set('sku', strtoupper(substr(Str::slug($name), 0, 6)) . '-' . strtoupper(Str::random(4)));
+                                                    }),
+                                            ]),
                                     Select::make('barcode_symbology')
                                         ->label(__('app.barcode_symbology'))
                                         ->required()
@@ -226,6 +243,13 @@ class ProductForm
                                 ->minValue(0)
                                 ->default(0)
                                 ->helperText(__('app.stock_alert_helper')),
+                            DatePicker::make('expired_at')
+                                ->label('Tanggal Expired')
+                                ->native(false)
+                                ->displayFormat('d M Y')
+                                ->minDate(now())
+                                ->placeholder('Kosongkan jika tidak ada expired')
+                                ->helperText('Isi jika produk memiliki tanggal kadaluarsa'),
                         ])
                         ->columns(2),
 

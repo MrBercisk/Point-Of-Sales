@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Product extends Model
 {
-    use SoftDeletes;
+    // use SoftDeletes;
     protected $fillable = [
         // Basic Info
         'category_id',
@@ -20,6 +20,7 @@ class Product extends Model
         'name',
         'slug',
         'description',
+        'sku',
 
         // Barcode
         'barcode_symbology',
@@ -44,7 +45,8 @@ class Product extends Model
         'is_active',
         'has_imei_serial',
         'not_for_selling',
-        'needs_preparation'
+        'needs_preparation',
+        'expired_at',
     ];
 
     protected $casts = [
@@ -54,6 +56,7 @@ class Product extends Model
         'is_active'      => 'boolean',
         'has_imei_serial'=> 'boolean',
         'not_for_selling'=> 'boolean',
+        'expired_at' => 'date',
     ];
 
 
@@ -200,5 +203,34 @@ class Product extends Model
     public function hasModifiers(): bool
     {
         return $this->modifierGroups()->where('is_active', true)->exists();
+    }
+
+    /** Cek apakah produk sudah expired */
+    public function isExpired(): bool
+    {
+        return $this->expired_at && $this->expired_at->isPast();
+    }
+
+    /** Cek apakah produk akan expired dalam X hari */
+    public function isExpiringSoon(int $days = 7): bool
+    {
+        return $this->expired_at
+            && ! $this->isExpired()
+            && $this->expired_at->diffInDays(now()) <= $days;
+    }
+
+    /** Scope hanya produk yang belum expired */
+    public function scopeNotExpired(Builder $query): Builder
+    {
+        return $query->where(function ($q) {
+            $q->whereNull('expired_at')
+            ->orWhere('expired_at', '>=', now());
+        });
+    }
+
+    /** Scope produk yang akan expired dalam X hari */
+    public function scopeExpiringSoon(Builder $query, int $days = 7): Builder
+    {
+        return $query->whereBetween('expired_at', [now(), now()->addDays($days)]);
     }
 }
