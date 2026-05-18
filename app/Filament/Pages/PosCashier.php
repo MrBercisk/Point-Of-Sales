@@ -75,7 +75,7 @@ class PosCashier extends Page implements HasForms
     public string $draftLabel         = '';
     public ?int $currentDraftId = null; // track draft yang sedang dimuat
 
-    // Draft cart payload — public agar persisten antar Livewire request
+    // Draft cart payload
     public array   $draftCartPayload  = [];
     public ?int    $draftStudentId    = null;
     public ?string $draftStudentName  = null;
@@ -86,7 +86,7 @@ class PosCashier extends Page implements HasForms
 
     protected bool $lazyLoad = false;
 
-    // ── Access ────────────────────────────────────────────────────────
+    // Access
 
     public static function canAccess(): bool
     {
@@ -111,7 +111,7 @@ class PosCashier extends Page implements HasForms
         $this->cart = collect();
     }
 
-    // ── Computed ──────────────────────────────────────────────────────
+    // Computed
 
     #[Computed]
     public function categories(): Collection
@@ -179,7 +179,7 @@ class PosCashier extends Page implements HasForms
         );
     }
 
-    // ── Cart helpers ──────────────────────────────────────────────────
+    //Cart helpers
 
     public function cartTotal(): float
     {
@@ -206,7 +206,7 @@ class PosCashier extends Page implements HasForms
         return $this->selectedStudentBalance >= $this->cartTotal();
     }
 
-    // ── Get product data for cart ─────────────────────────────────────
+    // Get product data for cart
 
     public function getProductForCart(int $productId): ?array
     {
@@ -242,7 +242,7 @@ class PosCashier extends Page implements HasForms
         ];
     }
 
-    // ── Checkout ──────────────────────────────────────────────────────
+    // Checkout
 
     public function checkoutFromAlpine(
         array   $cart,
@@ -412,7 +412,7 @@ class PosCashier extends Page implements HasForms
         $this->toast('Transaksi berhasil! Invoice: ' . ($order->invoice_number ?? "ORD-{$order->id}"));
     }
 
-    // ── Modifier modal ────────────────────────────────────────────────
+    // Modifier modal
 
     public function confirmModifiers(): void
     {
@@ -499,7 +499,7 @@ class PosCashier extends Page implements HasForms
         }
     }
 
-    // ── Draft ─────────────────────────────────────────────────────────
+    // Draft
 
     public function openSaveDraftModal(
         array   $cart,
@@ -604,7 +604,7 @@ class PosCashier extends Page implements HasForms
         Cache::forget('pos_drafts_' . Filament::auth()->id());
     }
 
-    // ── Student ───────────────────────────────────────────────────────
+    // Student
 
     public function selectStudent(int $studentId): void
     {
@@ -649,7 +649,7 @@ class PosCashier extends Page implements HasForms
         $this->selectedCategory = $categoryId === $this->selectedCategory ? null : $categoryId;
     }
 
-    // ── Receipt / checkout modal helpers ──────────────────────────────
+    // Receipt / checkout modal helpers
 
     public function closeReceiptModal(): void
     {
@@ -680,7 +680,7 @@ class PosCashier extends Page implements HasForms
         }
     }
 
-    // ── Product poll ──────────────────────────────────────────────────
+    // Product poll
 
     public function refreshProducts(): void
     {
@@ -692,7 +692,7 @@ class PosCashier extends Page implements HasForms
         unset($this->categories);
     }
 
-    // ── Legacy server-side cart (kept for compatibility) ──────────────
+    // server-side cart
 
     public function addToCart(int $productId): void
     {

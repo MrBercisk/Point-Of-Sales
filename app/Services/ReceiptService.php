@@ -8,9 +8,6 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class ReceiptService
 {
-    /**
-     * Ambil semua data receipt dari Settings — termasuk layout & toggle visibilitas
-     */
     private function storeData(): array
     {
         $s = Settings::current();
@@ -41,21 +38,15 @@ class ReceiptService
         ];
     }
 
-    /**
-     * Pastikan semua relasi yang dibutuhkan blade sudah ter-load.
-     * Aman dipanggil berkali-kali — loadMissing tidak query ulang relasi yang sudah ada.
-     */
+
     private function ensureRelationsLoaded(Order $order): void
     {
         $order->loadMissing([
             'items.product',
-            'items.modifiers.modifier', // OrderItemModifier → Modifier (nama)
+            'items.modifiers.modifier',
         ]);
     }
 
-    /**
-     * Generate PDF struk & simpan ke storage/app/receipts/{invoice_number}.pdf
-     */
     public function generatePdf(Order $order): string
     {
         $this->ensureRelationsLoaded($order);
@@ -84,7 +75,7 @@ class ReceiptService
     }
 
     /**
-     * Kembalikan konten PDF sebagai string (untuk response download langsung)
+     * konten PDF sebagai string
      */
     public function getPdfContent(Order $order): string
     {

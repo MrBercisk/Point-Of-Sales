@@ -1,7 +1,7 @@
+@auth
 @php
     $settings = \App\Models\Settings::current();
 @endphp
-
 <div style="
     text-align: center; 
     padding: 12px 16px; 
@@ -16,3 +16,4 @@
         &mdash; Developed by <strong>{{ $settings->developed_by }}</strong>
     @endif
 </div>
+@endauth

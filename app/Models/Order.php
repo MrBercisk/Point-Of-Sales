@@ -50,13 +50,9 @@ class Order extends Model
         return $this->hasMany(OrderItem::class);
     }
 
-    /* hitung dan update total dari semua items
-     * PENTING: pakai items() bukan items supaya selalu fresh query dari DB,
-     * tidak pakai cache relasi yang stale — ini fix utama total meleset saat ada modifier.
-     * saveQuietly supaya tidak trigger event cascade. */
     public function calculateTotal(): void
     {
-        $this->total_amount = $this->items()->sum('subtotal'); // () = fresh query, bukan cache
+        $this->total_amount = $this->items()->sum('subtotal'); 
         $this->saveQuietly();
     }
 

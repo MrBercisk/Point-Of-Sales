@@ -1,5 +1,12 @@
 (function () {
     function initSidebarToggle() {
+        // ── Guard: jangan inject di login/auth page (tidak ada .fi-sidebar) ──
+        if (!document.querySelector('.fi-sidebar')) {
+            const old = document.getElementById('sidebar-toggle-btn');
+            if (old) old.remove();
+            return;
+        }
+
         if (document.getElementById('sidebar-toggle-btn')) return;
 
         const btn = document.createElement('div');
@@ -14,14 +21,11 @@
         function clickFilamentBtn() {
             const filamentBtn = document.querySelector('.fi-sidebar-collapse-btn');
             if (!filamentBtn) return false;
-
             filamentBtn.style.cssText = 'position:fixed!important;top:-9999px!important;left:-9999px!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:auto!important;display:block!important;visibility:visible!important;';
             filamentBtn.click();
-
             setTimeout(() => {
                 filamentBtn.style.cssText = 'position:fixed!important;top:-9999px!important;left:-9999px!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important;';
             }, 100);
-
             return true;
         }
 
@@ -33,7 +37,6 @@
                     if (store && typeof store.isOpen !== 'undefined') { store.isOpen = !store.isOpen; return true; }
                 } catch(e) {}
             }
-
             const sidebar = getSidebar();
             if (sidebar && sidebar._x_dataStack) {
                 try {
@@ -46,23 +49,15 @@
                     if (typeof data.collapsed !== 'undefined') { data.collapsed = !data.collapsed; return true; }
                 } catch(e) {}
             }
-
             return false;
         }
 
         function updateBtn() {
             const sidebar = getSidebar();
             if (!sidebar) return;
-
             const w = sidebar.offsetWidth;
             const isCollapsed = w < 100;
-
-            if (isCollapsed) {
-                btn.classList.add('collapsed');
-            } else {
-                btn.classList.remove('collapsed');
-            }
-
+            btn.classList.toggle('collapsed', isCollapsed);
             btn.style.setProperty('left', w + 'px', 'important');
         }
 
@@ -83,6 +78,17 @@
         }
 
         updateBtn();
+
+        // ── Sembunyikan toggle saat modal Filament aktif ──
+        const bodyObserver = new MutationObserver(() => {
+            const hasModal = !!document.querySelector('.fi-modal-window, .fi-overlay, [wire\\:id] [role="dialog"]');
+            btn.style.opacity = hasModal ? '0' : '';
+            btn.style.pointerEvents = hasModal ? 'none' : '';
+        });
+        bodyObserver.observe(document.body, {
+            childList: true,
+            subtree: true,
+        });
     }
 
     if (document.readyState === 'loading') {
