@@ -43,11 +43,13 @@ class ModifierGroupsTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->actions([
-                EditAction::make(),
+                EditAction::make()
+                ->authorize(fn () => request()->user()?->can('modifier-group.edit')),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                    ->authorize(fn () => request()->user()?->can('modifier-group.delete')),
                 ]),
             ]);
     }

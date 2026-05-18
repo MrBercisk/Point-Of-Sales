@@ -14,8 +14,13 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use UnitEnum;
 
+// permission filament
+use App\Filament\Traits\HasFilamentPermission;
+
 class ModifierGroupResource extends Resource
 {
+    use HasFilamentPermission;
+    protected static string $permissionPrefix = 'modifier-group';
     protected static ?string $model = ModifierGroup::class;
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedSquares2x2;
     protected static ?int $navigationSort = 2;

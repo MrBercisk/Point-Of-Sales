@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Cache;
 use UnitEnum;
 
 use App\Filament\Traits\HasFilamentPermission;
+use App\Services\KitchenOrderService;
 use App\Services\OrderItemModifierService;
 
 class PosCashier extends Page implements HasForms
@@ -331,6 +332,8 @@ class PosCashier extends Page implements HasForms
         }
 
         $order->updateQuietly(['total_amount' => $total]);
+        app(KitchenOrderService::class)->createFromOrder($order, $this->cart);
+
 
         // Hapus draft yang sedang aktif jika ada
         if ($this->currentDraftId) {

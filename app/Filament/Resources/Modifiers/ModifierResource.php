@@ -14,8 +14,13 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use UnitEnum;
 
+// permission filament
+use App\Filament\Traits\HasFilamentPermission;
+
 class ModifierResource extends Resource
 {
+    use HasFilamentPermission;
+    protected static string $permissionPrefix = 'modifier';
     protected static ?string $model = Modifier::class;
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTag;
     protected static ?int $navigationSort = 3;

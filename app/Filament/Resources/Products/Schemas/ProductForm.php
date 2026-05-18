@@ -256,6 +256,13 @@ class ProductForm
                                 ->label('Bahan Baku / Topping')
                                 ->default(false)
                                 ->helperText('Aktifkan jika produk ini adalah bahan baku atau topping — tidak akan muncul di kasir'),
+                            Toggle::make('needs_preparation')
+                                ->label('Perlu Dimasak / Disiapkan')
+                                ->helperText('Aktifkan jika produk ini perlu waktu persiapan (misal: es teh, indomie goreng). Order akan masuk ke Kitchen Display.')
+                                ->default(false)
+                                ->onColor('warning')
+                                ->onIcon('heroicon-s-fire'), 
+
                         ]),
 
 

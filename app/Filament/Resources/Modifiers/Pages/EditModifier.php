@@ -13,7 +13,8 @@ class EditModifier extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            DeleteAction::make(),
+            DeleteAction::make()
+            ->authorize(fn () => request()->user()?->can('modifier.delete')),
         ];
     }
 }

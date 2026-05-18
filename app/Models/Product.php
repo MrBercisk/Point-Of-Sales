@@ -42,6 +42,7 @@ class Product extends Model
         'is_active',
         'has_imei_serial',
         'not_for_selling',
+        'needs_preparation'
     ];
 
     protected $casts = [

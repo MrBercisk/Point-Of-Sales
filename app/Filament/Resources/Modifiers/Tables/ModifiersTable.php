@@ -47,11 +47,13 @@ class ModifiersTable
                     ->relationship('group', 'name'),
             ])
             ->actions([
-                EditAction::make(),
+                EditAction::make()
+                 ->authorize(fn () => request()->user()?->can('modifier.edit')),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                     ->authorize(fn () => request()->user()?->can('modifier.delete')),
                 ]),
             ]);
     }
