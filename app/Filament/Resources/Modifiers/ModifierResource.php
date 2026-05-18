@@ -22,7 +22,7 @@ class ModifierResource extends Resource
     use HasFilamentPermission;
     protected static string $permissionPrefix = 'modifier';
     protected static ?string $model = Modifier::class;
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTag;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::PlusCircle;
     protected static ?int $navigationSort = 3;
     protected static string|UnitEnum|null $navigationGroup = 'Products';
 
@@ -30,19 +30,19 @@ class ModifierResource extends Resource
     public static function getNavigationLabel(): string
     {
         // return 'Modifier';
-        return 'Pilihan Tambahan';
+        return 'Add-ons';
     }
 
     // label untuk satu record, dipakai di breadcrumb, tombol, notifikasi. 
     public static function getModelLabel(): string
     {
-        return 'Pilihan Tambahan';
+        return 'Add-ons';
     }
 
     // label untuk banyak record, dipakai di judul halaman index, breadcrumb list. 
     public static function getPluralModelLabel(): string
     {
-        return 'Pilihan Tambahan';
+        return 'Add-ons';
     }
 
     public static function form(Schema $schema): Schema

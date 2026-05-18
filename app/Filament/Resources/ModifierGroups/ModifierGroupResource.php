@@ -28,18 +28,18 @@ class ModifierGroupResource extends Resource
 
     public static function getNavigationLabel(): string
     {
-        return 'Grup Pilihan Tambahan';
+        return 'Grup Add-ons';
         // return 'Grup Modifier';
     }
 
     public static function getModelLabel(): string
     {
-        return 'Grup Pilihan Tambahan';
+        return 'Grup Add-ons';
     }
 
     public static function getPluralModelLabel(): string
     {
-        return 'Grup Pilihan Tambahan';
+        return 'Grup Add-ons';
     }
 
     public static function form(Schema $schema): Schema
