@@ -233,4 +233,46 @@ class Product extends Model
     {
         return $query->whereBetween('expired_at', [now(), now()->addDays($days)]);
     }
+
+    /* stock movement */
+    public function stockMovements(): HasMany
+    {
+        return $this->hasMany(StockMovement::class)->latest();
+    }
+
+    // Helper: catat movement otomatis
+    public function recordStockMovement(
+        string  $type,
+        int     $quantity,
+        ?string $reason = null,
+        ?string $notes = null,
+        ?Model  $reference = null,
+    ): StockMovement {
+        $before = $this->stock;
+
+        $after = match ($type) {
+            'in'         => $before + $quantity,
+            'out'        => $before - $quantity,
+            'adjustment' => $quantity,
+            default      => $before,
+        };
+
+        // Update stok produk
+        if ($type === 'adjustment') {
+            $quantity = abs($after - $before); // selisihnya
+            $this->update(['stock' => $after]);
+        }
+
+        return $this->stockMovements()->create([
+            'user_id'        => auth()->id(),
+            'type'           => $type,
+            'quantity'       => $quantity,
+            'stock_before'   => $before,
+            'stock_after'    => $after,
+            'reference_type' => $reference ? get_class($reference) : null,
+            'reference_id'   => $reference?->id,
+            'reason'         => $reason,
+            'notes'          => $notes,
+        ]);
+    }
 }

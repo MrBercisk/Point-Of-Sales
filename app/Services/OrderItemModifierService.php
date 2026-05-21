@@ -21,6 +21,14 @@ class OrderItemModifierService
 
             // kurangi stok bahan baku kalau terhubung ke produk
             if ($modifier->product_id && $modifier->product) {
+                $invoice = $item->order?->invoice_number ?? "ORD-{$item->order_id}";
+                $modifier->product->recordStockMovement(
+                    type:      'out',
+                    quantity:  1,
+                    reason:    'Add-on/Topping POS',
+                    notes:     "Invoice: {$invoice} — Modifier: {$modifier->name}",
+                    reference: $item->order,
+                );
                 $modifier->product->reduceStock(1);
             }
         }
@@ -36,6 +44,14 @@ class OrderItemModifierService
 
             // kembalikan stok bahan baku
             if ($modifier?->product_id && $modifier->product) {
+                $invoice = $item->order?->invoice_number ?? "ORD-{$item->order_id}";
+                $modifier->product->recordStockMovement(
+                    type:      'in',
+                    quantity:  1,
+                    reason:    'Add-on/Topping dihapus dari order',
+                    notes:     "Invoice: {$invoice} — Modifier: {$modifier->name}",
+                    reference: $item->order,
+                );
                 $modifier->product->increaseStock(1);
             }
         }

@@ -25,9 +25,8 @@ class WalletTransaction extends Model
         'balance_after'  => 'decimal:2',
     ];
 
-    /* ------------------------------------------------------------------ */
-    /* Relasi                                                               */
-    /* ------------------------------------------------------------------ */
+
+    /* Relasi */
 
     public function student(): BelongsTo
     {
@@ -39,9 +38,6 @@ class WalletTransaction extends Model
         return $this->belongsTo(User::class);
     }
 
-    /* ------------------------------------------------------------------ */
-    /* Accessor                                                             */
-    /* ------------------------------------------------------------------ */
 
     public function getTypeLabelAttribute(): string
     {
@@ -59,10 +55,7 @@ class WalletTransaction extends Model
         return 'Rp ' . number_format($this->amount, 0, ',', '.');
     }
 
-    /* ------------------------------------------------------------------ */
-    /* Scopes                                                               */
-    /* ------------------------------------------------------------------ */
-
+    /* Scopes */
     public function scopeTopUps(Builder $query): Builder
     {
         return $query->where('type', 'top_up');

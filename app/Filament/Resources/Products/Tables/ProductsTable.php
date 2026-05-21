@@ -23,6 +23,11 @@ use Filament\Tables\Table;
 
 class ProductsTable
 {
+    private static function userCan(string $permission): bool
+    {
+        $user = auth()->user();
+        return $user instanceof \App\Models\User && $user->can($permission);
+    }
      public static function configure(Table $table): Table
     {
         return $table
@@ -105,61 +110,74 @@ class ProductsTable
                     ->query(fn ($query) => $query->where('stock', '<=', 0))
                     ->toggle(),
             ])
-            ->recordActions([
-                ActionGroup::make([
-                    ViewAction::make()
-                    ->authorize(fn () => request()->user()?->can('products.view')),
-                    EditAction::make()
-                    ->authorize(fn () => request()->user()?->can('products.edit')),
-                    Action::make('adjustStock')
-                        ->label(__('app.adjust_stock'))
-                        ->icon('heroicon-o-archive-box-arrow-down')
-                        ->color('warning')
-                        ->form([
-                            Radio::make('type')
-                                ->options([
-                                    'add' => __('app.add_stock'),
-                                    'subtract' => __('app.subtract_stock'),
-                                    'set' => __('app.set_stock'),
-                                ])
-                                ->default('add')
-                                ->required()
-                                ->inline(),
-                            TextInput::make('quantity')
-                                ->label(__('app.quantity'))
-                                ->numeric()
-                                ->required()
-                                ->minValue(0),
-                        ])
-                        ->action(function (Product $record, array $data) {
-                            $quantity = (int) $data['quantity'];
-                            match($data['type']) {
-                                'add' => $record->increment('stock', $quantity),
-                                'subtract' => $record->decrement('stock', $quantity),
-                                'set' => $record->update(['stock' => $quantity]),
+           ->recordActions([
+            ActionGroup::make([
+                ViewAction::make()
+                    ->authorize(fn () => self::userCan('products.view')),
+                EditAction::make()
+                    ->authorize(fn () => self::userCan('products.edit')),
+                Action::make('adjustStock')
+                    ->label(__('app.adjust_stock'))
+                    ->icon('heroicon-o-archive-box-arrow-down')
+                    ->color('warning')
+                    ->form([
+                        Radio::make('type')
+                            ->options([
+                                'in'         => __('app.add_stock'),
+                                'out'        => __('app.subtract_stock'),
+                                'adjustment' => __('app.set_stock'),
+                            ])
+                            ->default('in')
+                            ->required()
+                            ->inline(),
+                        TextInput::make('quantity')
+                            ->label(__('app.quantity'))
+                            ->numeric()
+                            ->required()
+                            ->minValue(0),
+                        TextInput::make('reason')
+                            ->label('Alasan')
+                            ->placeholder('Misal: Restock dari supplier, Koreksi stok...')
+                            ->maxLength(255),
+                    ])
+                    ->action(function (Product $record, array $data) {
+                        $quantity = (int) $data['quantity'];
+                        $reason   = $data['reason'] ?? null;
+
+                        $record->recordStockMovement(
+                            type:     $data['type'],
+                            quantity: $quantity,
+                            reason:   $reason,
+                        );
+
+                        if ($data['type'] !== 'adjustment') {
+                            match ($data['type']) {
+                                'in'  => $record->increment('stock', $quantity),
+                                'out' => $record->decrement('stock', $quantity),
                             };
-                        })
-                        ->authorize(fn () => request()->user()?->can('products.edit')),
-                    DeleteAction::make()
-                    ->authorize(fn () => request()->user()?->can('products.delete')),
-                ]),
-            ])
+                        }
+                    })
+                   ->authorize(fn () => self::userCan('products.edit')),
+                DeleteAction::make()
+                    ->authorize(fn () => self::userCan('products.delete')),
+            ]),
+        ])
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make()
-                    ->authorize(fn () => request()->user()?->can('products.delete')),
+                    ->authorize(fn () => self::userCan('products.delete')),
                     BulkAction::make('activate')
                         ->label(__('app.activate'))
                         ->icon('heroicon-o-check')
                         ->color('success')
                         ->action(fn ($records) => $records->each->update(['is_active' => true]))
-                        ->authorize(fn () => request()->user()?->can('products.edit')),
+                        ->authorize(fn () => self::userCan('products.edit')),
                     BulkAction::make('deactivate')
                         ->label(__('app.deactivate'))
                         ->icon('heroicon-o-x-mark')
                         ->color('danger')
                         ->action(fn ($records) => $records->each->update(['is_active' => false]))
-                        ->authorize(fn () => request()->user()?->can('products.edit')),
+                        ->authorize(fn () => self::userCan('products.edit')),
                 ]),
             ])
             ->defaultSort('name', 'asc')

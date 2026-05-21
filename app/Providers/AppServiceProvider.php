@@ -27,7 +27,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // Force HTTPS untuk ngrok
-        URL::forceScheme('https');
+        // URL::forceScheme('https');
 
         // Inject library JsBarcode & QRCode.js ke semua halaman Filament panel
         FilamentView::registerRenderHook(

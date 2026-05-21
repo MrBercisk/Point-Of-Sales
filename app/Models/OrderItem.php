@@ -25,27 +25,28 @@ class OrderItem extends Model
     protected static function boot()
     {
         parent::boot();
-
-        // Auto-calculate subtotal before creating
-        // HANYA jika belum di-set secara eksplisit dari luar (misal PosCashier sudah
-        // hitung (base + modifier) × qty). Kalau di-override di sini, modifier hilang dari subtotal.
         static::creating(function ($item) {
             if (empty($item->subtotal)) {
                 $item->subtotal = $item->price * $item->quantity;
             }
         });
-
-        // Auto-calculate subtotal before updating
-        // Skip kalau subtotal sudah di-set dirty dari luar (misal recalculateSubtotal)
         static::updating(function ($item) {
             if (! $item->isDirty('subtotal')) {
                 $item->subtotal = $item->price * $item->quantity;
             }
         });
 
-        // Reduce product stock after item created
+        // kurangi stok dan buat di stock movement
         static::created(function ($item) {
             if ($item->product) {
+                $invoice = $item->order?->invoice_number ?? "ORD-{$item->order_id}";
+                $item->product->recordStockMovement(
+                    type:      'out',
+                    quantity:  $item->quantity,
+                    reason:    'Penjualan POS',
+                    notes:     "Invoice: {$invoice}",
+                    reference: $item->order,
+                );
                 $item->product->reduceStock($item->quantity);
             }
         });
@@ -57,9 +58,17 @@ class OrderItem extends Model
             }
         });
 
-        // Restore stock and recalculate total when item deleted
+        // restore stok jika item dihapus, tapi jika order belum dibatalkan dan tambahkan ke stok mocvement
         static::deleting(function ($item) {
-            if ($item->product && $item->order->status !== 'cancelled') {
+           if ($item->product && $item->order->status !== 'cancelled') {
+                $invoice = $item->order?->invoice_number ?? "ORD-{$item->order_id}";
+                $item->product->recordStockMovement(
+                    type:      'in',
+                    quantity:  $item->quantity,
+                    reason:    'Item dihapus dari order',
+                    notes:     "Invoice: {$invoice}",
+                    reference: $item->order,
+                );
                 $item->product->increaseStock($item->quantity);
             }
             // Restore stock bahan tambahan (telur, keju, dll)
@@ -102,14 +111,12 @@ class OrderItem extends Model
         return $this->modifiers->sum('price_snapshot');
     }
 
-    /* recalculate subtotal termasuk modifier setelah modifier disimpan
-     * Pakai fresh query () supaya tidak pakai cache modifier yang stale.
-     * saveQuietly supaya tidak trigger boot saved lagi. */
+
     public function recalculateSubtotal(): void
     {
-        $modifiersTotal = $this->modifiers()->sum('price_snapshot'); // fresh query
+        $modifiersTotal = $this->modifiers()->sum('price_snapshot'); 
         $this->subtotal = ($this->price + $modifiersTotal) * $this->quantity;
-        $this->saveQuietly(); // saveQuietly supaya tidak trigger boot saved lagi
+        $this->saveQuietly();
         $this->order->calculateTotal();
     }
 
