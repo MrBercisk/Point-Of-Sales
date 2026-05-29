@@ -74,7 +74,7 @@ class PosCashier extends Page implements HasForms
     public bool   $showSaveDraftModal = false;
     public bool   $showDraftPanel     = false;
     public string $draftLabel         = '';
-    public ?int $currentDraftId = null; // track draft yang sedang dimuat
+    public ?int   $currentDraftId     = null;
 
     // Draft cart payload
     public array   $draftCartPayload  = [];
@@ -86,8 +86,6 @@ class PosCashier extends Page implements HasForms
     public string  $draftPayMethod    = 'cash';
 
     protected bool $lazyLoad = false;
-
-    // Access
 
     public static function canAccess(): bool
     {
@@ -112,7 +110,7 @@ class PosCashier extends Page implements HasForms
         $this->cart = collect();
     }
 
-    // Computed
+    // ── Computed ──────────────────────────────────────────────────────
 
     #[Computed]
     public function categories(): Collection
@@ -151,6 +149,42 @@ class PosCashier extends Page implements HasForms
             ->get();
     }
 
+    /**
+     * Modifier cache — di-load sekali saat halaman pertama dibuka.
+     * Di-pass ke Alpine store sebagai JSON, tidak perlu hit server lagi saat klik produk.
+     * Format: { product_id: [ { id, name, is_required, max_select, modifiers: [...] } ] }
+     */
+    #[Computed]
+    public function productsModifiers(): array
+    {
+        return Product::query()
+            ->where('is_active', true)
+            ->where('stock', '>', 0)
+            ->where('not_for_selling', false)
+            ->whereHas('modifierGroups')
+            ->with([
+                'modifierGroups' => fn($q) => $q
+                    ->where('is_active', true)
+                    ->with(['modifiers' => fn($q) => $q->where('is_active', true)]),
+            ])
+            ->get()
+            ->mapWithKeys(fn($product) => [
+                $product->id => $product->modifierGroups->map(fn($g) => [
+                    'id'          => $g->id,
+                    'name'        => $g->name,
+                    'is_required' => $g->is_required,
+                    'max_select'  => $g->max_select,
+                    'modifiers'   => $g->modifiers->map(fn($m) => [
+                        'id'         => $m->id,
+                        'name'       => $m->name,
+                        'price'      => (float) $m->price,
+                        'product_id' => $m->product_id,
+                    ])->toArray(),
+                ])->toArray(),
+            ])
+            ->toArray();
+    }
+
     #[Computed]
     public function studentSearchResults(): Collection
     {
@@ -180,7 +214,7 @@ class PosCashier extends Page implements HasForms
         );
     }
 
-    //Cart helpers
+    // ── Cart helpers ──────────────────────────────────────────────────
 
     public function cartTotal(): float
     {
@@ -207,7 +241,22 @@ class PosCashier extends Page implements HasForms
         return $this->selectedStudentBalance >= $this->cartTotal();
     }
 
-    // Get product data for cart
+    // ── Modifier modal dari data lokal (zero DB query) ────────────────
+
+    /**
+     * Dipanggil Alpine saat klik produk bermodifier.
+     * Data modifier sudah di-pass dari frontend (productsModifiers cache),
+     * jadi tidak ada query DB sama sekali.
+     */
+    public function openModifierModalFromData(int $productId, array $modifierGroups): void
+    {
+        $this->pendingProductId      = $productId;
+        $this->pendingModifierGroups = $modifierGroups;
+        $this->selectedModifiers     = [];
+        $this->showModifierModal     = true;
+    }
+
+    // ── Get product data for cart (fallback jika perlu) ───────────────
 
     public function getProductForCart(int $productId): ?array
     {
@@ -243,7 +292,7 @@ class PosCashier extends Page implements HasForms
         ];
     }
 
-    // Checkout
+    // ── Checkout ──────────────────────────────────────────────────────
 
     public function checkoutFromAlpine(
         array   $cart,
@@ -273,7 +322,6 @@ class PosCashier extends Page implements HasForms
 
         $total = $this->cartTotal();
 
-        // Payment validation
         if ($paymentMethod === 'wallet') {
             if ($isGuest) {
                 $this->paymentMethod = 'cash';
@@ -298,7 +346,6 @@ class PosCashier extends Page implements HasForms
             return;
         }
 
-        // Create order
         $order = Order::create([
             'student_id'     => $studentId,
             'customer_name'  => $studentName ?? ($isGuest ? 'Tamu' : null),
@@ -334,8 +381,6 @@ class PosCashier extends Page implements HasForms
         $order->updateQuietly(['total_amount' => $total]);
         app(KitchenOrderService::class)->createFromOrder($order, $this->cart);
 
-
-        // Hapus draft yang sedang aktif jika ada
         if ($this->currentDraftId) {
             Draft::where('user_id', Filament::auth()->id())
                 ->where('id', $this->currentDraftId)
@@ -344,7 +389,6 @@ class PosCashier extends Page implements HasForms
             $this->currentDraftId = null;
         }
 
-        // Deduct wallet
         $balanceAfter = null;
         if ($this->paymentMethod === 'wallet' && $studentId) {
             $student = Student::findOrFail($studentId);
@@ -356,7 +400,6 @@ class PosCashier extends Page implements HasForms
             $balanceAfter = $student->fresh()->balance;
         }
 
-        // PDF
         $pdfPath = null;
         try {
             $pdfPath = app(ReceiptService::class)->generatePdf(
@@ -409,13 +452,11 @@ class PosCashier extends Page implements HasForms
         $this->clearStudent();
 
         Cache::forget('pos_drafts_' . Filament::auth()->id());
-
         $this->dispatch('checkout-success');
-
         $this->toast('Transaksi berhasil! Invoice: ' . ($order->invoice_number ?? "ORD-{$order->id}"));
     }
 
-    // Modifier modal
+    // ── Modifier modal ────────────────────────────────────────────────
 
     public function confirmModifiers(): void
     {
@@ -451,7 +492,6 @@ class PosCashier extends Page implements HasForms
 
         $modifiersTotal = collect($selectedModifierData)->sum('price');
 
-        // Tutup modal DULU sebelum dispatch
         $this->closeModifierModal();
 
         $this->dispatch('modifier-confirmed', item: [
@@ -502,7 +542,7 @@ class PosCashier extends Page implements HasForms
         }
     }
 
-    // Draft
+    // ── Draft ─────────────────────────────────────────────────────────
 
     public function openSaveDraftModal(
         array   $cart,
@@ -562,12 +602,11 @@ class PosCashier extends Page implements HasForms
 
         Cache::forget('pos_drafts_' . Filament::auth()->id());
 
-        $this->currentDraftId   = null; //reset, ini draft baru bukan yg dimuat
+        $this->currentDraftId   = null;
         $this->draftCartPayload = [];
         $this->closeSaveDraftModal();
 
         $this->dispatch('draft-saved');
-
         $this->toast('Draft disimpan!');
     }
 
@@ -576,7 +615,6 @@ class PosCashier extends Page implements HasForms
         $draft = Draft::where('user_id', Filament::auth()->id())->find($draftId);
         if (! $draft) return;
 
-        // draft yang dimuat
         $this->currentDraftId = $draftId;
 
         $this->dispatch('draft-loaded', payload: [
@@ -590,7 +628,6 @@ class PosCashier extends Page implements HasForms
         ]);
 
         $this->showDraftPanel = false;
-
         $this->toast('Draft dimuat!');
     }
 
@@ -607,7 +644,7 @@ class PosCashier extends Page implements HasForms
         Cache::forget('pos_drafts_' . Filament::auth()->id());
     }
 
-    // Student
+    // ── Student ───────────────────────────────────────────────────────
 
     public function selectStudent(int $studentId): void
     {
@@ -652,7 +689,7 @@ class PosCashier extends Page implements HasForms
         $this->selectedCategory = $categoryId === $this->selectedCategory ? null : $categoryId;
     }
 
-    // Receipt / checkout modal helpers
+    // ── Receipt / checkout modal helpers ──────────────────────────────
 
     public function closeReceiptModal(): void
     {
@@ -683,7 +720,7 @@ class PosCashier extends Page implements HasForms
         }
     }
 
-    // Product poll
+    // ── Product poll ──────────────────────────────────────────────────
 
     public function refreshProducts(): void
     {
@@ -693,9 +730,10 @@ class PosCashier extends Page implements HasForms
         }
         unset($this->products);
         unset($this->categories);
+        unset($this->productsModifiers); // refresh modifier cache juga
     }
 
-    // server-side cart
+    // ── Server-side cart ──────────────────────────────────────────────
 
     public function addToCart(int $productId): void
     {

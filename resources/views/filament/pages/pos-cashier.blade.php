@@ -250,7 +250,13 @@
 
 {{--POS --}}
 
-<div class="pos-wrap" x-data x-init="$store.posCart.init()">
+<div class="pos-wrap"
+    x-data
+    x-init="
+        $store.posCart.init();
+        $store.posCart.modifierCache = @js($this->productsModifiers);
+    ">
+
 
     {{--  Produk ─ --}}
     <div class="pos-left">
@@ -734,6 +740,7 @@ document.addEventListener('alpine:init', () => {
     // ── Cart Store ───────────────────────────────────────────────────
     Alpine.store('posCart', {
         cart: [],
+        modifierCache: {},
         student: { id: null, name: '', class: '', balance: 0 },
         isGuest: false,
         payMethod: 'wallet',
@@ -803,45 +810,51 @@ document.addEventListener('alpine:init', () => {
                 this._adding = false;
             }
         },
-        async addProductFast(productId, productData, wire) {
+                async addProductFast(productId, productData, wire) {
             if (this._adding) return;
             this._adding = true;
-
+ 
             try {
-                // cek produk punya tambahan tidak
-                // tidak punya langsung push
                 const hasModifiers = productData.has_modifiers ?? false;
-
+ 
                 if (!hasModifiers) {
-                    // Langsung push
+                    // Tidak ada modifier — langsung push, zero latency
                     this.pushItem({
-                        action:      'add_to_cart',
-                        product_id:  productData.id,
-                        name:        productData.name,
-                        price:       parseFloat(productData.price),
-                        base_price:  parseFloat(productData.price),
-                        stock:       productData.stock,
-                        image:       productData.image,
-                        modifiers:   [],
+                        action:     'add_to_cart',
+                        product_id: productData.id,
+                        name:       productData.name,
+                        price:      parseFloat(productData.price),
+                        base_price: parseFloat(productData.price),
+                        stock:      productData.stock,
+                        image:      productData.image,
+                        modifiers:  [],
                     });
                     this.playBeep();
                 } else {
-                    // Ada tambahan adds on
-                    const result = await wire.getProductForCart(productId);
-                    if (!result || result.action === 'error') {
-                        if (result?.message) this.showToast(result.message, 'error');
-                        return;
-                    }
-                    if (result.action === 'modifier_modal') return;
-                    if (result.action === 'add_to_cart') {
-                        this.pushItem(result);
-                        this.playBeep();
+                    // Ada modifier — ambil dari cache lokal, zero DB query
+                    const groups = this.modifierCache[productId] ?? [];
+                    if (groups.length === 0) {
+                        // Fallback ke server jika cache kosong (seharusnya tidak terjadi)
+                        const result = await wire.getProductForCart(productId);
+                        if (!result || result.action === 'error') {
+                            if (result?.message) this.showToast(result.message, 'error');
+                            return;
+                        }
+                        if (result.action === 'modifier_modal') return;
+                        if (result.action === 'add_to_cart') {
+                            this.pushItem(result);
+                            this.playBeep();
+                        }
+                    } else {
+                        // Buka modal langsung dari data cache — hanya 1 Livewire call ringan
+                        await wire.openModifierModalFromData(productId, groups);
                     }
                 }
             } finally {
                 this._adding = false;
             }
         },
+
         pushItem(item) {
             // Produk tanpa modifier gabung qty
             if (!item.modifiers || item.modifiers.length === 0) {
