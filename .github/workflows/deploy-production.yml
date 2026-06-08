@@ -8,6 +8,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Create temp .env for build
+        run: |
+          echo "APP_NAME=pos" > .env
+          echo "APP_ENV=production" >> .env
+          echo "APP_KEY=base64:gbiKwHRSQv7Xm59H3uTE486fAXXvAYwLYSql+51aCSM=" >> .env
+          echo "DB_CONNECTION=mysql" >> .env
+          echo "CACHE_STORE=file" >> .env
+          echo "SESSION_DRIVER=file" >> .env
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
