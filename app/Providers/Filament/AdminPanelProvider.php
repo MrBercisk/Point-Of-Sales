@@ -32,7 +32,11 @@ class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
-        $settings = Settings::current();
+        try {
+            $settings = Settings::current();
+        } catch (\Exception $e) {
+            $settings = null;
+        }
 
         return $panel
             ->default()
